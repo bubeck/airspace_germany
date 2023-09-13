@@ -27,6 +27,7 @@ if [ "$url" != "" ]; then
 			git add "$dest_file"
 			git commit -m "Update to new version of airspace file from internet"
 			git push
+			date | mail -s "new german airspace detected" tilmann@bubecks.de
 		fi
 	fi
 fi
