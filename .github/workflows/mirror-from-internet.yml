@@ -11,4 +11,10 @@ jobs:
           node-version: '14'
       - run: npm install -g bats
       - run: tree
-      - run: ls -lR
+      - run: date >> README.md
+      - run: |
+          git config --global user.name "bubeck"
+          git config --global user.email "tilmann@bubecks.de"
+          git commit -a -m "update to new version from internet"
+          git push
+          # git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
