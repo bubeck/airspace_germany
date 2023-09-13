@@ -12,9 +12,10 @@ jobs:
       - run: npm install -g bats
       - run: tree
       - run: date >> README.md
+      - run: cat README.md
       - run: |
-          git config --global user.name "bubeck"
-          git config --global user.email "tilmann@bubecks.de"
+          # git config --global user.name "bubeck"
+          # git config --global user.email "tilmann@bubecks.de"
           git commit -a -m "update to new version from internet"
           git push
           # git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
