@@ -13,9 +13,9 @@ jobs:
       - run: tree
       - run: date >> README.md
       - run: cat README.md
+      - run: git config user.email "tilmann@bubecks.de"
+      - run: git config user.name "Tilmann Bubeck"    
+      - run: git commit -a -m "update to new version from internet"
+      - run: git push
       - run: |
-          git config user.email "tilmann@bubecks.de"
-          git config user.name "Tilmann Bubeck"
-          git commit -a -m "update to new version from internet"
-          git push
           # git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
