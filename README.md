@@ -8,8 +8,19 @@ As this way of publication does not show any changes and does not allow for coll
 I set up this repository to re-publish it for easy access to the open source community.
 
 It gets automatically updated by a GitHub workflow once a day, so it should be always up to date.
-If you want to publish any changes, you can either send them to the original author mentioned
+
+## Verification of an airspace
+
+Airspaces sometimes have minor tweaks, like similar coordinates instead of identical.
+You can use http://xcglobe.com/airspace to look at them in detail and find improvements.
+
+## Changes or Pull requests
+
+If you want to provide any changes or fixes, you can either send them to the original author mentioned
 in the airspace file or issue a pull request on this repository. I will try to forward your changes
 to the author of the airspace file.
 
-Hopefully, he will use GitHub or something similar to publish this on his own in the future.
+
+
+Hopefully, the author will use GitHub or something similar to publish the airspace on his own in the future, so that this repository is not necessary anymore.
+
