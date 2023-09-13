@@ -1,6 +1,6 @@
 on:
-  issues:
-    types: [opened, edited]
+  issue_comment:
+    types: [created, edited, deleted]
 jobs:
   check-for-update:
     runs-on: ubuntu-latest
