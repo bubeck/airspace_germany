@@ -6,4 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: bin/download-airspace-germany.sh
+      - run: |
+          git config user.email "tilmann@bubecks.de"
+          git config user.name  "Tilmann Bubeck"
+          bin/download-airspace-germany.sh
