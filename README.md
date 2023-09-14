@@ -12,7 +12,7 @@ It gets automatically updated by a GitHub workflow once a day, so it should be a
 ## Verification of an airspace
 
 Airspaces sometimes have minor tweaks, like similar coordinates instead of identical.
-You can use http://xcglobe.com/airspace to look at them in detail and find improvements.
+You can use http://xcglobe.com/airspace to look at them in detail and find improvements. In addition https://airspaces.bargen.dev/ is also helpful. It does not show arcs, therefore all rounded airspaces are rectangular. However, as most algorithm dealing with arcs have rounding errors, this can be sometimes also useful.
 
 ## Changes or Pull requests
 
