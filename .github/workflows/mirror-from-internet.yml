@@ -1,6 +1,7 @@
 on:
   schedule:
     - cron: '50 23 * * *'
+  workflow_dispatch:
 
 jobs:
   check-for-update:
