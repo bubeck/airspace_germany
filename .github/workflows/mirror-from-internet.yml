@@ -7,7 +7,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: |
+      - name: run download-airspace-germany script
+        run: bin/download-airspace-germany.sh
+      - name: Commit files
+        run: |
           git config user.email "workflow@github.com"
           git config user.name  "GitHub Workflow"
-          bin/download-airspace-germany.sh
+          git add -A
+          git commit -m "Runs download-airspace-germany.sh" || echo "Nothing to update"
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
