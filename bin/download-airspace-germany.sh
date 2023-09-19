@@ -22,13 +22,7 @@ if [ "$url" != "" ]; then
 	dest_file="source/airspace_germany.txt"
 	wget -O "$temp_file" "$http_prefix/$url"
 	if [ $? -eq 0 ]; then
-        	if ! diff -q "$temp_file" "$dest_file" >/dev/null ; then
-			cp "$temp_file" "$dest_file"
-			git add "$dest_file"
-			git commit -m "Update to new version of airspace file from internet"
-			git push
-			date | mail -s "new german airspace detected" tilmann@bubecks.de
-		fi
+		cp "$temp_file" "$dest_file"
 	fi
 fi
 
