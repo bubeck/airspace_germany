@@ -14,6 +14,8 @@ It gets automatically updated by a GitHub workflow once a day, so it should be a
 Airspaces sometimes have minor tweaks, like similar coordinates instead of identical.
 You can use http://xcglobe.com/airspace to look at them in detail and find improvements. In addition https://airspaces.bargen.dev/ is also helpful. It does not show arcs, therefore all rounded airspaces are rectangular. However, as most algorithm dealing with arcs have rounding errors, this can be sometimes also useful.
 
+Also https://www.openaip.net/map is based on the official german openair file. This page can be used to zoom into the map and read the coordinates of points in question. However, it is not possible to upload own OpenAir files.
+
 ## Changes or Pull requests
 
 If you want to provide any changes or fixes, you can either send them to the original author mentioned
