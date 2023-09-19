@@ -8,7 +8,7 @@
 * Any conclusions drawn from these data and information are the sole responsibility of the user.
 * 
 *
-* The times for the restricted and danger areas (ED-R´s and ED-D´s) are from German-AIP.
+* The times for the restricted and danger areas (ED-R's and ED-D's) are from German-AIP.
 * 
 *   e.g.    MON-THU     = this area is active from Monday till Thursday 
 *           MON-FRI+    = this area is normally active from Monday till Friday. Activation for SAT, SUN and HOL is possible by NOTAM
@@ -20,12 +20,12 @@
 * Changes to this times can be distributed at every time by NOTAM
 *
 *
-* A big "THANK YOU" to Michael Paus, who developed a software to check the file against typo´s
+* A big "THANK YOU" to Michael Paus, who developed a software to check the file against typo's
 *        mpMediaSoft GmbH
-*        Schönaicher Str. 3
+*        Schoenaicher Str. 3
 *        70597 Stuttgart
 *        Tel.: +49-711-765-4094
-*        EMail: info (ät) mpmediasoft.de
+*        EMail: info (aet) mpmediasoft.de
 *
 *
 *########################################################################################################
@@ -41,7 +41,7 @@
 * ED-R 145 coordinates changed 
 * upper limits of ED-D 44, 46 and 47 changed
 * class C changed at: EDDB, EDDF, EDDH, EDDV
-* CTR´s changed: LFSB, EDDE
+* CTR's changed: LFSB, EDDE
 * class D (non CTR) changed at: EDHI, EDDV, EDDW
 * TMZ new: EDDW, EDDE    
 * TMZ changed at: EDDC, EDDH, EDDV, EDDP, EDJA
@@ -84,7 +84,7 @@
 * new wave windows Haardt and Bad Wildungen added 
 * ED-R Skysails renamed to Klixbuell
 * ED-D Mecklenburgische Bucht deleted
-* ED-R´s Eckernfoerde, Kiel and Hohe Duene added 
+* ED-R's Eckernfoerde, Kiel and Hohe Duene added 
 *
 * changes 2022_11 -> 2023_03
 * PJE areas EDTF, EDLT, Radevormwald, Riedenheim and EDGS deleted
@@ -101,8 +101,8 @@
 * changes 2023_07 -> 2023_09
 * PJE-zone @ EDLI withdrawn
 * ED-D 46B withdrawn
-* tempo ED-R Peenemünde new
-* tempo ED-R and RMZ/TMZ München (Oktoberfest) added
+* tempo ED-R Peenemuende new
+* tempo ED-R and RMZ/TMZ Muenchen (Oktoberfest) added
 * TMZ-EDDV Monitor Freq changed
 *
 *################################################################################
@@ -126,7 +126,7 @@ DC 9.0
 
 * bis 31.12.23
 AC R
-AN ED-R Peenemünde NOTAM
+AN ED-R Peenemuende NOTAM
 AH 5000ft MSL
 AL GND
 DP 54:10:15 N 013:41:37 E 
