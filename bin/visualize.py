@@ -18,7 +18,7 @@ def plot_p(plt, p, color="black"):
 def plot_line(plt, x1, y1, x2, y2, color="black"):
     x = [x1, x2]
     y = [y1, y2]
-    plt.plot(x, y, color=color, alpha=1.0, linewidth=1)
+    plt.plot(x, y, color=color, alpha=1.0, linewidth=0.5)
     #print(f'plot_line(x1={x1}, y1={y1}, x2={x2}, y2={y2})')
 
 last_pos = None
@@ -154,9 +154,12 @@ def plot(records):
     fig.canvas.mpl_connect('button_press_event', on_press)
     #fig.canvas.mpl_connect('pick_event', on_press)
 
-    with PdfPages('test.pdf') as pdf:
-        pdf.savefig()
-        
+    #with PdfPages('test.pdf') as pdf:
+    #    pdf.savefig()
+
+    plt.savefig("test.pdf")
+    plt.savefig("test.svg", bbox_inches="tight")
+    
     # ax.margins(x=8.877760411607648,y=48.773972056413555)
     plt.show()
 
@@ -179,9 +182,9 @@ def on_press(event):
     
 parser = argparse.ArgumentParser(description='Plot OpenAir airspace file')
 parser.add_argument("-n", "--no-arc", action="store_true",
-                    help="Plot airspace and draw arcs as straight line")
+                    help="Draw arcs as straight line")
 parser.add_argument("-f", "--fast", action="store_true",
-                    help="Plot airspace arcs with less quality")
+                    help="Draw arcs with less quality (10 degree steps)")
 parser.add_argument("-c", "--show-coords", action="store_true",
                     help="Show latitude/longitude of points in plot")
 parser.add_argument("filename")
