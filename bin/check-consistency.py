@@ -280,16 +280,8 @@ parser.add_argument("-d", "--distance",
                     type=int, default=100)
 parser.add_argument("-p", "--point", 
                     help="Find all other points near this point.")
-parser.add_argument("-P", "--plot", action="store_true",
-                    help="Plot airspace and show")
-parser.add_argument("-a", "--plot-arc", action="store_true",
-                    help="Plot airspace and show arcs")
-parser.add_argument("-f", "--fast", action="store_true",
-                    help="Plot airspace with less quality")
 parser.add_argument("-F", "--fix-closing", action="store_true",
                     help="Fix all open airspaces by inserting a closing point")
-parser.add_argument("-c", "--show-coords", action="store_true",
-                    help="Show latitude/longitude of points in plot")
 parser.add_argument("filename")
 args = parser.parse_args()
 
