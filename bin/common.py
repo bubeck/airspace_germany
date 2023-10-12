@@ -1,7 +1,17 @@
 # -*- mode: python; python-indent-offset: 4 -*-
 
 import math
+from pprint import pprint
+from shapely.geometry import Polygon
+import sys
 
+args = None
+
+def setArgs(globalArgs):
+    global args
+
+    args = globalArgs
+    
 def nautical_miles_to_km(nm):
     return nm * 1.852
 
@@ -81,14 +91,14 @@ def get_kx_ky(lat):
     ky = (111.13209 - 0.56605 * cos2 + 0.0012 * cos4)
     return (kx, ky)
 
+def decimal_degrees_to_dms(decimal_degrees):
+    mnt,sec = divmod(decimal_degrees*3600,60)
+    deg,mnt = divmod(mnt, 60)
+    return (round(deg),round(mnt),round(sec))
+                  
 def strDegree(v, width):
-    v_a = abs(v)
-    degree_i = int(v_a)
-    minute = (v_a - degree_i) * 60
-    minute_i = int(minute)
-    sec = (minute - minute_i) * 60
-    sec_i = int(round(sec))
-    return f'{degree_i:0{width}d}:{minute_i:02d}:{sec_i:02d}'
+    (degrees,minutes,seconds) = decimal_degrees_to_dms(abs(v))
+    return f'{degrees:0{width}d}:{minutes:02d}:{seconds:02d}'
     
 def strLatLon(P):
     result = strDegree(P[0], 2) + " "
@@ -104,3 +114,121 @@ def strLatLon(P):
         result = result + "W "
     return result
 
+def resolveRecordArcs(records):
+    for record in records:
+        resolveArcs(record)
+        
+def resolveArcs(record):
+    global args
+
+    elements_resolved = []
+    for element in record["elements"]:
+        if element["type"] == "point":
+            element["computed"] = False
+            elements_resolved.append(element)
+            #print(f'resolve(point, {strLatLon(element["location"])}')
+        elif element["type"] == "arc":
+            if not args.no_arc:
+                if "radius" in element:
+                    elements_resolved.extend(resolve_DA(element["center"], nautical_miles_to_km(element["radius"]), element["start"], element["end"], element["clockwise"], True))
+                else:
+                    elements_resolved.extend(resolve_DB(element["center"], element["start"], element["end"], element["clockwise"]))
+            else:
+                elements_resolved.extend(createElementPoint(element["start"][0], element["start"][1]))
+                elements_resolved.extend(createElementPoint(element["end"][0], element["end"][1]))
+        elif element["type"] == "circle":
+            elements_resolved.extend(resolve_circle(element))
+        else:
+            print(f'Unknown element type: {element["type"]}')
+            sys.exit(1)
+
+    record["elements_resolved"] = elements_resolved
+    return elements_resolved
+                                         
+def createElementPoint(lat, lon):
+    element = {}
+    element["type"] = "point"
+    element["location"] = [ lat, lon]
+    return element
+
+def resolve_DA(center, radius_km, start_angle, end_angle, clockwise, use_edge):
+    global args
+    elements = []
+    
+    if args.fast_arc:
+        dir = 10
+    else:
+        dir = 1
+        
+    if clockwise:
+        while start_angle > end_angle:
+            end_angle = end_angle + 360
+    else:
+        dir = -dir
+        while start_angle < end_angle:
+            start_angle = start_angle + 360
+        
+    #print("start_angle:", start_angle)
+    #print("end_angle:", end_angle)
+    #print("clockwise:", clockwise)
+
+    if not use_edge:
+        start_angle = start_angle + dir
+        end_angle = end_angle - dir
+        
+    angle = start_angle
+    
+    while True:
+        # print("loop angle:", angle)
+        if clockwise:
+            if angle >= end_angle:
+                angle = end_angle
+                break
+        else:
+            if angle <= end_angle:
+                angle = end_angle
+                break
+        (lat, lon) = geo_destination(center[0], center[1], angle, radius_km)
+        # print(f'lat={lat} lon={lon}')
+        element = createElementPoint(lat,lon)
+        element["computed"] = True
+        elements.append(element)
+        angle = angle + dir
+
+    return elements
+
+def resolve_circle(element):
+    center = element["center"]
+    radius_km = nautical_miles_to_km(element["radius"])
+    elements = resolve_DA(center, radius_km, 0, 180, True, True)
+    elements.extend(resolve_DA(center, radius_km, 180, 0, True, True))
+    return elements
+
+def resolve_DB(center, start, end, clockwise):
+
+    (dist_s, bearing_s) = geo_distance(center[0], center[1], start[0], start[1])
+    (dist_e, bearing_e) = geo_distance(center[0], center[1], end[0], end[1])
+
+    dist_s_km = (dist_s / 100) / 1000
+    
+    elements = resolve_DA(center, dist_s_km, bearing_s, bearing_e, clockwise, False)
+    element = createElementPoint(start[0], start[1])
+    element["computed"] = False
+    elements.insert(0, element)
+    element = createElementPoint(end[0], end[1])
+    element["computed"] = False
+    elements.append(element)
+
+    return elements
+
+
+def createPolygons(records):
+    for record in records:
+        createPolygonOfRecord(record)
+        
+def createPolygonOfRecord(record):
+    points = []
+
+    for element in record["elements_resolved"]:
+        points.append(element["location"])
+    record["polygon"] = Polygon(points)

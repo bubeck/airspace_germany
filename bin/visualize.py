@@ -32,72 +32,13 @@ def plot_to(plt, pos, color="black", label=True):
     global last_pos
     global args
     
-    #print("plot_to", pos)
+    #print(f'plot_to({common.strLatLon(pos)}')
     if last_pos != None:
         plot_line(plt, last_pos[1], last_pos[0], pos[1], pos[0], color)
-    
+        #print(f'plot_to({common.strLatLon(last_pos)} -> {common.strLatLon(pos)}')
     last_pos = pos
     if label and args.show_coords:
         plt.annotate(common.strLatLon(pos), (pos[1], pos[0]), color=color)
-
-def plot_circle(plt, element, color="black"):
-    center = element["center"]
-    radius_km = common.nautical_miles_to_km(element["radius"])
-    plot_arc_DA(plt, center, radius_km, 0, 180, True, True, color, False)
-    plot_arc_DA(plt, center, radius_km, 180, 0, True, True, color, False)
-    
-def plot_arc_DA(plt, center, radius_km, start_angle, end_angle, clockwise, use_edge, color="black", label=True):
-    global args
-
-    if args.fast:
-        dir = 10
-    else:
-        dir = 1
-        
-    if clockwise:
-        while start_angle > end_angle:
-            end_angle = end_angle + 360
-    else:
-        dir = -dir
-        while start_angle < end_angle:
-            start_angle = start_angle + 360
-        
-    #print("start_angle:", start_angle)
-    #print("end_angle:", end_angle)
-    #print("clockwise:", clockwise)
-
-    if not use_edge:
-        start_angle = start_angle + dir
-        end_angle = end_angle - dir
-        
-    angle = start_angle
-    
-    while True:
-        # print("loop angle:", angle)
-        if clockwise:
-            if angle >= end_angle:
-                angle = end_angle
-                break
-        else:
-            if angle <= end_angle:
-                angle = end_angle
-                break
-        (lat, lon) = common.geo_destination(center[0], center[1], angle, radius_km)
-        # print(f'lat={lat} lon={lon}')
-        plot_to(plt, [lat, lon], color, False)
-        angle = angle + dir
-
-
-def plot_arc(plt, center, start, end, clockwise, color="black", label=True):
-
-    (dist_s, bearing_s) = common.geo_distance(center[0], center[1], start[0], start[1])
-    (dist_e, bearing_e) = common.geo_distance(center[0], center[1], end[0], end[1])
-
-    dist_s_km = (dist_s / 100) / 1000
-    
-    plot_to(plt, start, color, label)
-    plot_arc_DA(plt, center, dist_s_km, bearing_s, bearing_e, clockwise, False, color, label)
-    plot_to(plt, end, color, label)
 
 ax = None
 fig = None
@@ -118,28 +59,16 @@ def plot(records):
     color_pos = 25
 
     plot_reset()
-    # plot_arc(plt, [0,0], [1,0], [0,1], True)
 
     if True:
         for record in records:
             plot_reset()
             color = cmap(color_pos)
             color_pos = (color_pos + 7) % color_num
-            for element in record["elements"]:
+            for element in record["elements_resolved"]:
                 if element["type"] == "point":
-                    plot_to(plt, element["location"], color)
-                elif element["type"] == "arc":
-                    if not args.no_arc:
-                        if "radius" in element:
-                            #pprint(element)
-                            plot_arc_DA(plt, element["center"], common.nautical_miles_to_km(element["radius"]), element["start"], element["end"], element["clockwise"], True, color)
-                        else:
-                            plot_arc(plt, element["center"], element["start"], element["end"], element["clockwise"], color)
-                    else:
-                        plot_to(plt, element["start"], color)
-                        plot_to(plt, element["end"], color)
-                elif element["type"] == "circle":
-                    plot_circle(plt, element, color)
+                    label = not ("computed" in element and element["computed"] == True)
+                    plot_to(plt, element["location"], color, label)
                 else:
                     print(f'Unknown element type: {element["type"]}')
                     sys.exit(1)
@@ -182,13 +111,14 @@ def on_press(event):
     
 parser = argparse.ArgumentParser(description='Plot OpenAir airspace file')
 parser.add_argument("-n", "--no-arc", action="store_true",
-                    help="Draw arcs as straight line")
-parser.add_argument("-f", "--fast", action="store_true",
-                    help="Draw arcs with less quality (10 degree steps)")
+                    help="Resolve arcs as straight line")
+parser.add_argument("-f", "--fast-arc", action="store_true",
+                    help="Resolve arcs with less quality (10 degree steps)")
 parser.add_argument("-c", "--show-coords", action="store_true",
                     help="Show latitude/longitude of points in plot")
 parser.add_argument("filename")
 args = parser.parse_args()
+common.setArgs(args)
 
 # read file into a StringIO, as we have to parse it multiple times
 content = io.StringIO()
@@ -204,5 +134,7 @@ for record, error in reader:
         raise error
     records.append(record)
 
+common.resolveRecordArcs(records)
+    
 plot(records)
     

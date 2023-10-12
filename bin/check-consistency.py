@@ -9,6 +9,8 @@ import sys
 from datetime import datetime
 import os
 import common
+from shapely.geometry import Polygon
+import re
 
 def findLatLon(p):
     global records
@@ -61,6 +63,9 @@ def getAirspaceName(record):
         h1 = ""
     return (n1, h1)
 
+def getAirspaceName2(record):
+    (n,h) = getAirspaceName(record)
+    return f'{n} {h}'
 
 def findingForTwoPoints(message, record1, record2, p1, p2):
     global records
@@ -150,6 +155,22 @@ def checkPoints():
                     findNearPoints(record, element["start"])
                     findNearPoints(record, element["end"])
 
+def checkDB():
+    global records
+    
+    for record in records:
+        for element in record["elements"]:
+            if element["type"] == "arc":
+                if not "radius" in element:
+                    (dist1_cm, bearing) = common.geo_distance(element["center"][0],element["center"][1], element["start"][0], element["start"][1])
+                    (dist2_cm, bearing) = common.geo_distance(element["center"][0],element["center"][1], element["end"][0], element["end"][1])
+                    diff_m = abs(dist1_cm-dist2_cm)/100
+                    if diff_m > 30:
+                        lineno = None
+                        if "lineno" in element:
+                            lineno = element["lineno"]
+                        problem(1, f'DB has a big difference radius between start and end of {diff_m:.0f}m', lineno)
+                                
 def getFirstPoint(element):
     if element["type"] == "point":
         return element["location"]
@@ -201,13 +222,20 @@ problem_count = [0, 0, 0]
 prio_name = [ "fatal", "error", "warning" ]
 
 def problem(prio, message, lineno = None):
-    global problem_count, prio_name
+    global problem_count, prio_name, args
     
     if lineno != None:
         in_line = f', line {lineno}'
     else:
         in_line = ""
-    print(f'{prio_name[prio]}{in_line}: {message}')
+
+    print_out = True
+    if args.errors_only:
+        if prio >= 2:
+            print_out = False    
+    if print_out:
+        print(f'{prio_name[prio]}{in_line}: {message}')
+        
     problem_count[prio] = problem_count[prio] + 1
 
 def printProblemCounts():
@@ -247,7 +275,60 @@ def checkEncoding(fp):
                     message = message + "^"
             message = message + "\n"
             problem(2, message, lineno)
-            
+
+def checkInvalidPolygons(records):
+    for record in records:
+        if not record["polygon"].is_valid:
+            problem(1, "Invalid Polygon for " + getAirspaceName2(record))
+
+def checkHeightFL(height):
+    h = height[2:].strip()
+    if h == "":
+        return 1
+    else:
+        if h.isnumeric():
+            fl = int(h)
+            if int(fl / 5) * 5 == fl:
+                return 2
+    return 0
+
+def checkHeightFT(height):
+    m = re.match("(\d+)([a-z]+)\s*(\w+)", height)
+    if m:
+        if not m.group(1).isdecimal():
+            return 1
+        h = int(m.group(1))
+        if int(h/100)*100 != h:
+            return 2
+        if not m.group(2) in ["ft"]:
+            return 1
+        if m.group(3) == "MSL":
+            return 2
+        if not m.group(3) in ["AGL", "AMSL"]:
+            return 1
+        return 0
+    return 1
+    
+def checkHeight(height):
+    if height == "GND":
+        return 0
+    if height.startswith("FL"):
+        return checkHeightFL(height)
+    if height[0].isdecimal():
+        return checkHeightFT(height)
+    
+    return 1
+
+def checkHeights(records):
+    for record in records:
+        for h in ["floor", "ceiling"]:
+            if h in record:
+                prio = checkHeight(record[h])
+                if prio > 0:
+                    problem(prio, f'Incorrect height "{record[h]}" in {getAirspaceName2(record)}')
+            else:
+                problem(1, f'Missing height "{h}" in {getAirspaceName2(record)}')
+        
 def fixOpenAirspaces(fp):
 
     (root, ext) = os.path.splitext(args.filename)
@@ -275,6 +356,8 @@ records = []
 findings = []
 
 parser = argparse.ArgumentParser(description='Check OpenAir airspace file for consistency')
+parser.add_argument("-e", "--errors-only", action="store_true",
+                    help="Print only errors and no warnings")
 parser.add_argument("-d", "--distance",
                     help="Specify the distance in meters to see two points as close",
                     type=int, default=100)
@@ -282,8 +365,13 @@ parser.add_argument("-p", "--point",
                     help="Find all other points near this point.")
 parser.add_argument("-F", "--fix-closing", action="store_true",
                     help="Fix all open airspaces by inserting a closing point")
+parser.add_argument("-n", "--no-arc", action="store_true",
+                    help="Resolve arcs as straight line")
+parser.add_argument("-f", "--fast-arc", action="store_true",
+                    help="Resolve arcs with less quality (10 degree steps)")
 parser.add_argument("filename")
 args = parser.parse_args()
+common.setArgs(args)
 
 # read file into a StringIO, as we have to parse it multiple times
 content = io.StringIO()
@@ -312,13 +400,19 @@ content.seek(0, io.SEEK_SET)
 if args.fix_closing:
     fixOpenAirspaces(content)
     sys.exit(0)
-    
+
+common.resolveRecordArcs(records)
+common.createPolygons(records)
+
+checkInvalidPolygons(records)
+checkHeights(records)
+checkDB()
 checkEncoding(content)
 checkOpenAirspaces()
 checkNameEncoding(records)
 checkCircles()
 checkPoints()
-    
+
 ret = printProblemCounts()
 
 sys.exit(ret)
