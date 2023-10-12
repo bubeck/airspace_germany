@@ -14,5 +14,5 @@ jobs:
         run: python -m pip install --upgrade pip setuptools aerofiles shapely
       - name: run check-consistency script
         # This is a false positive. Stuttgart is touching itself, but is OK.
-        run: python bin/check-consistency.py --errors-only --ignore-errors "error: Invalid Polygon for Stuttgart 128.950:D (4500ft MSL-FL100)" source/airspace_germany.txt
+        run: python bin/check-consistency.py --errors-only --ignore-errors 'error: Invalid Polygon for Stuttgart 128.950:D (4500ft MSL-FL100)' source/airspace_germany.txt
         
