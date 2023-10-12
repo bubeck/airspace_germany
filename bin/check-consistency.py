@@ -166,10 +166,14 @@ def checkDB():
                     (dist2_cm, bearing) = common.geo_distance(element["center"][0],element["center"][1], element["end"][0], element["end"][1])
                     diff_m = abs(dist1_cm-dist2_cm)/100
                     if diff_m > 30:
+                        if diff_m > 100:
+                            prio = 1
+                        else:
+                            prio = 2
                         lineno = None
                         if "lineno" in element:
                             lineno = element["lineno"]
-                        problem(1, f'DB has a big difference radius between start and end of {diff_m:.0f}m', lineno)
+                        problem(prio, f'DB has a big difference radius between start and end of {diff_m:.0f}m', lineno)
                                 
 def getFirstPoint(element):
     if element["type"] == "point":
@@ -229,12 +233,16 @@ def problem(prio, message, lineno = None):
     else:
         in_line = ""
 
+    message = f'{prio_name[prio]}{in_line}: {message}'
+    if message in args.ignore_errors:
+        return
+    
     print_out = True
     if args.errors_only:
         if prio >= 2:
             print_out = False    
     if print_out:
-        print(f'{prio_name[prio]}{in_line}: {message}')
+        print(message)
         
     problem_count[prio] = problem_count[prio] + 1
 
@@ -361,6 +369,9 @@ parser.add_argument("-e", "--errors-only", action="store_true",
 parser.add_argument("-d", "--distance",
                     help="Specify the distance in meters to see two points as close",
                     type=int, default=100)
+parser.add_argument("-i", "--ignore-errors",
+                    help="Specify a error message, that is a false alert and should be ignored",
+                    nargs='*')
 parser.add_argument("-p", "--point", 
                     help="Find all other points near this point.")
 parser.add_argument("-F", "--fix-closing", action="store_true",
