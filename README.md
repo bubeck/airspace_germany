@@ -22,7 +22,12 @@ If you want to provide any changes or fixes, you can either send them to the ori
 in the airspace file or issue a pull request on this repository. I will try to forward your changes
 to the author of the airspace file.
 
-
-
 Hopefully, the author will use GitHub or something similar to publish the airspace on his own in the future, so that this repository is not necessary anymore.
+
+## Correctness of airspace
+
+There is a GitHub Action "check.yml", that checks the airspace file for errors. Here is the status of the current available airspace file in regards to this check.
+Even if there are errors, the airspace file is still helpful, because most applications using the file are able to handle those problems.
+
+![example workflow](https://github.com/bubeck/airspace_germany/actions/workflows/check.yml/badge.svg)
 
