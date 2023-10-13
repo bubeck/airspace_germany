@@ -1,4 +1,7 @@
 on:
+  push:
+    paths:
+      - 'source/airspace_germany.txt'
   workflow_dispatch:
 
 jobs:
