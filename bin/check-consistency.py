@@ -220,7 +220,7 @@ def checkOpenAirspaces():
             line_start = None
             if "lineno" in firstElement:
                 line_start = firstElement["lineno"]
-            problem(1, f'airspace "{name},{dimension}" is not closed with a gap of {gap_km:.1f}km.', line_start)
+            problem(2, f'airspace "{name},{dimension}" is not closed with a gap of {gap_km:.1f}km.', line_start)
 
 problem_count = [0, 0, 0]
 prio_name = [ "fatal", "error", "warning" ]
@@ -234,7 +234,7 @@ def problem(prio, message, lineno = None):
         in_line = ""
 
     message = f'{prio_name[prio]}{in_line}: {message}'
-    if message in args.ignore_errors:
+    if args.ignore_errors != None and message in args.ignore_errors:
         return
     
     print_out = True
@@ -290,6 +290,9 @@ def checkInvalidPolygons(records):
             problem(1, "Invalid Polygon for " + getAirspaceName2(record))
 
 def checkHeightFL(height):
+    fl = height[:2]
+    if fl.upper() == "FL" and fl != "FL":
+        return 2
     h = height[2:].strip()
     if h == "":
         return 1
@@ -301,26 +304,28 @@ def checkHeightFL(height):
     return 0
 
 def checkHeightFT(height):
-    m = re.match("(\d+)([a-z]+)\s*(\w+)", height)
+    m = re.match("(\d+)\s*(\w+)\s*(\w+)", height)
     if m:
         if not m.group(1).isdecimal():
             return 1
         h = int(m.group(1))
         if int(h/100)*100 != h:
             return 2
-        if not m.group(2) in ["ft"]:
+        unit = m.group(2).upper()
+        if not unit in ["FT"]:
             return 1
-        if m.group(3) == "MSL":
+        ref = m.group(3).upper()
+        if ref == "MSL":
             return 2
-        if not m.group(3) in ["AGL", "AMSL"]:
+        if not ref in ["AGL", "AMSL"]:
             return 1
         return 0
     return 1
     
 def checkHeight(height):
-    if height == "GND":
+    if height.upper() in ["GND", "SFC"]:
         return 0
-    if height.startswith("FL"):
+    if height.upper().startswith("FL"):
         return checkHeightFL(height)
     if height[0].isdecimal():
         return checkHeightFT(height)
