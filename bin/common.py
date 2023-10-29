@@ -1,4 +1,10 @@
 # -*- mode: python; python-indent-offset: 4 -*-
+#
+# This module contains all the common functions needed by the other
+# python scripts in this directory.
+#
+# 2023-10-15: tilmann@bubecks.de
+#
 
 import math
 from pprint import pprint
@@ -7,11 +13,22 @@ import sys
 
 args = None
 
+#
+# Set the global command line argument into this namespace, so
+# that functions defined here, are able to access them.
+#
+# @param globalArgs the result from argparse
+#
 def setArgs(globalArgs):
     global args
 
     args = globalArgs
-    
+
+# Converter function to convert nautical miles to km
+#
+# @param nm nautical miles
+#
+# @return corresponding value in km
 def nautical_miles_to_km(nm):
     return nm * 1.852
 

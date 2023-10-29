@@ -44,8 +44,11 @@ def findNearCircles(record_base, element_base):
                     if distance_m > 0 and distance_m < args.distance:
                         findingForTwoPoints(f'Airspaces with near circles ({distance_m}m)', record_base, record, element_base["center"], element["center"])
 
-def checkCircles():
-    global records
+def checkCircles(records):
+
+    """
+    Walk through all center points and check, if there are close center points, that are not identical.
+    """
     
     for record in records:
         #pprint(record)
@@ -139,8 +142,11 @@ def findNearPoints(record_base, p1):
                 if distance_m > 0 and distance_m < args.distance:
                     findingForTwoPoints(f'Airspaces with close points ({int(distance_m)}m):', record_base, record, p1, element["end"])
 
-def checkPoints():
-    global records
+def checkPoints(records):
+
+    """
+    Walk through all points and find other points which are close but not identical.
+    """
     
     for record in records:
         #pprint(record)
@@ -155,8 +161,12 @@ def checkPoints():
                     findNearPoints(record, element["start"])
                     findNearPoints(record, element["end"])
 
-def checkDB():
-    global records
+def checkDB(records):
+
+    """
+    Walk through all DB entries and check if the radius of the first
+    and last point are identical.
+    """
     
     for record in records:
         for element in record["elements"]:
@@ -189,8 +199,7 @@ def getLastPoint(element):
         return element["end"]
     return None
 
-def findOpenAirspaces():
-    global records
+def findOpenAirspaces(records):
     open_records = []
     
     for record in records:
@@ -204,8 +213,13 @@ def findOpenAirspaces():
             open_records.append(record)
     return open_records
 
-def checkOpenAirspaces():
-    records = findOpenAirspaces()
+def checkOpenAirspaces(records):
+
+    """
+    Walk through all records and check if they are closed.
+    """
+    
+    records = findOpenAirspaces(records)
     for record in records:
         #pprint(record)
         #print("Checking", record["name"])
@@ -255,6 +269,11 @@ def printProblemCounts():
     return problem_count[1] > 0
 
 def checkNameEncoding(records):
+
+    """
+    Walk through all records and check, if the name parameter is ASCII.
+    """
+    
     for record in records:
         if not record["name"].isascii():
             name = record["name"]
@@ -264,6 +283,11 @@ def checkNameEncoding(records):
             problem(1, f'Airspace name contains non-ascii characters: "{name}"', lineno)
   
 def checkEncoding(fp):
+
+    """
+    Read in the file and search for non-ascii characters.
+    """
+    
     banner_printed = False
     lineno = 0
     for line in fp:
@@ -285,6 +309,12 @@ def checkEncoding(fp):
             problem(2, message, lineno)
 
 def checkInvalidPolygons(records):
+
+    """
+    Walk through all records and check if the polygon is valid.
+    It is considered invalid, if https://shapely.readthedocs.io/en/stable/reference/shapely.Polygon.html#shapely.Polygon.is_valid is not true.
+    """
+    
     for record in records:
         if not record["polygon"].is_valid:
             problem(1, "Invalid Polygon for " + getAirspaceName2(record))
@@ -333,6 +363,12 @@ def checkHeight(height):
     return 1
 
 def checkHeights(records):
+
+    """
+    Walk through all records and check all heights given for each airspace.
+    A height must follow a convention to be valid.
+    """
+    
     for record in records:
         for h in ["floor", "ceiling"]:
             if h in record:
@@ -341,15 +377,25 @@ def checkHeights(records):
                     problem(prio, f'Incorrect height "{record[h]}" in {getAirspaceName2(record)}')
             else:
                 problem(1, f'Missing height "{h}" in {getAirspaceName2(record)}')
-        
-def fixOpenAirspaces(fp):
 
+                
+def fixOpenAirspaces(fp, records):
+
+    """
+    Read in from the given file and write out a new file
+    with all open airspaces closed. This fixes airspaces,
+    where the first and the last point of the polygon are not the same.
+
+    The filename of the new file is derived from args.filename by
+    inserting the current date into the filename.
+    """
+    
     (root, ext) = os.path.splitext(args.filename)
     now_iso = datetime.now().isoformat(timespec='seconds')
     filename_fixed = f'{root}-{now_iso}{ext}'
     print(f'Fixing into {filename_fixed}')
 
-    records = findOpenAirspaces()
+    records = findOpenAirspaces(records)
     
     lineno = 0
     with open(filename_fixed, "w", newline='') as fp_f:
@@ -414,7 +460,7 @@ if args.point != None:
 content.seek(0, io.SEEK_SET)
 
 if args.fix_closing:
-    fixOpenAirspaces(content)
+    fixOpenAirspaces(content, records)
     sys.exit(0)
 
 common.resolveRecordArcs(records)
@@ -422,12 +468,12 @@ common.createPolygons(records)
 
 checkInvalidPolygons(records)
 checkHeights(records)
-checkDB()
+checkDB(records)
 checkEncoding(content)
-checkOpenAirspaces()
+checkOpenAirspaces(records)
 checkNameEncoding(records)
-checkCircles()
-checkPoints()
+checkCircles(records)
+checkPoints(records)
 
 ret = printProblemCounts()
 

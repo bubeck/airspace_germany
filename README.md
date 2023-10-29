@@ -9,10 +9,19 @@ I set up this repository to re-publish it for easy access to the open source com
 
 It gets automatically updated by a GitHub workflow once a day, so it should be always up to date.
 
-## Verification of an airspace
+## Verification of airspaces
 
-Airspaces sometimes have minor tweaks, like similar coordinates instead of identical.
-You can use http://xcglobe.com/airspace to look at them in detail and find improvements. In addition https://airspaces.bargen.dev/ is also helpful. It does not show arcs, therefore all rounded airspaces are rectangular. However, as most algorithm dealing with arcs have rounding errors, this can be sometimes also useful.
+Airspaces sometimes have errors or minor tweaks, like similar
+coordinates instead of identical. You can use
+[check-consistency.py](bin/check-consistency.py) to check an
+airspace. Use `check-consistency.py --help` for help.
+
+## Visual control of airspaces
+
+You can use [visualize.py](bin/visualize.py) to visualize an
+airspace. Use `visualize.py --help` for help.
+
+You can also use http://xcglobe.com/airspace to look at them in detail and find improvements. In addition https://airspaces.bargen.dev/ is also helpful. It does not show arcs, therefore all rounded airspaces are rectangular. However, as most algorithm dealing with arcs have rounding errors, this can be sometimes also useful.
 
 Also https://www.openaip.net/map is based on the official german openair file. This page can be used to zoom into the map and read the coordinates of points in question. However, it is not possible to upload own OpenAir files.
 
@@ -26,8 +35,12 @@ Hopefully, the author will use GitHub or something similar to publish the airspa
 
 ## Correctness of airspace
 
-There is a GitHub Action "check.yml", that checks the airspace file for errors. Here is the status of the current available airspace file in regards to this check.
-Even if there are errors, the airspace file is still helpful, because most applications using the file are able to handle those problems.
+There is a GitHub Action `check.yml`, that automatically checks the
+airspace file for errors whenever the airspace changes. Here is the
+status of the current available airspace file in regards to this
+check.  Even if there are errors, the airspace file is still helpful,
+because most applications using the file are able to handle those
+problems.
 
 ![example workflow](https://github.com/bubeck/airspace_germany/actions/workflows/check.yml/badge.svg)
 
