@@ -15,7 +15,7 @@ fi
 
 http_prefix="https://www.daec.de"
 
-url=$(wget -O - $http_prefix/fachbereiche/luftraum-flugsicherheit-betrieb/luftraumdaten/ | sed -n 's/.*href="\([^"]*\).*/\1/p' | grep "Luftraum_und_Flugbetrieb")
+url=$(wget -O - $http_prefix/fachbereiche/luftraum-flugsicherheit-betrieb/luftraumdaten/ | grep Luftraumdaten | grep media | sed -n 's/.*href="\([^"]*\).*/\1/p'
 
 if [ "$url" != "" ]; then
 	temp_file="/tmp/airspace_germany.txt"
