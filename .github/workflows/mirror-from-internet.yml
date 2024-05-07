@@ -7,7 +7,7 @@ jobs:
   check-for-update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: run download-airspace-germany script
         run: bin/download-airspace-germany.sh
       - name: Commit files
