@@ -66,7 +66,7 @@ def printProblemCounts():
     for prio in Prio:
         print(f'{problem_count[prio.value]} {prio.name}')
 
-    return problem_count[prio.OK.value] > 0
+    return problem_count[prio.ERR.value] > 0
 
 def iH(record1, record2):
     if record1["ceiling_ft"] > record2["floor_ft"] and record1["ceiling_ft"] < record2["ceiling_ft"]:
