@@ -5,10 +5,14 @@ import io
 
 import aerofiles.openair
 
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.style as mplstyle
 from matplotlib.backend_bases import MouseButton
 from matplotlib.backends.backend_pdf import PdfPages
+from shapely.geometry import Polygon, LineString
+from shapely.validation import explain_validity
+import shapely
 
 import common
 
@@ -44,7 +48,21 @@ ax = None
 fig = None
 zoom = 1
 
-def plot(records):
+def plot_shapely(plt, shape):
+    if isinstance(shape, shapely.Polygon):
+        y,x = shape.exterior.xy
+        plt.plot(x, y, color="red")
+        plt.fill(x, y, alpha=0.5, color="red")
+    elif isinstance(shape, shapely.LineString) or isinstance(shape, shapely.Point):
+        y,x = shape.xy
+        plt.plot(x, y, color="red")
+    elif isinstance(shape, shapely.MultiPolygon) or isinstance(shape, shapely.GeometryCollection):
+        for polygon in shape.geoms:
+            plot_shapely(plt, polygon)
+    else:
+        print(type(shape))
+    
+def plot(records, overlap):
     global args
     global ax
     global fig
@@ -60,11 +78,41 @@ def plot(records):
 
     plot_reset()
 
+    if args.intersects:
+        for r1,r2 in overlap:
+            intersection = shapely.intersection(r1["polygon"], r2["polygon"])
+            # 1 degree is approx. 110km.
+            # We define a maximum area for intersection. If bigger, then ignore
+            area_max = 1/110 * 1/110
+            if intersection.area < area_max:
+                plot_shapely(plt, intersection)
+            continue
+        
+            if isinstance(intersection, shapely.MultiPolygon) or isinstance(intersection, shapely.GeometryCollection):
+                for polygon in intersection.geoms:
+                    x,y = polygon.exterior.xy
+                    plt.plot(x, y, color="red")
+                    plt.fill(x, y, alpha=0.5, color="red")
+            elif isinstance(intersection, shapely.LineString):
+                plt.plot(*intersection.xy)
+            else:
+                x,y = intersection.exterior.xy
+                plt.plot(x, y, color="red")
+                plt.fill(x, y, alpha=0.5, color="red")
+                    
     if True:
         for record in records:
             plot_reset()
-            color = cmap(color_pos)
-            color_pos = (color_pos + 7) % color_num
+            if args.intersects:
+                color = "black"
+                for r1,r2 in overlap:
+                    if record == r1 or record == r2:
+                        color = "blue"
+                        break
+            else:
+                color = cmap(color_pos)
+                color_pos = (color_pos + 7) % color_num
+                
             for element in record["elements_resolved"]:
                 if element["type"] == "point":
                     label = not ("computed" in element and element["computed"] == True)
@@ -108,7 +156,11 @@ def on_press(event):
     ax.set_xlim(x-zoom, x+zoom)
     ax.set_ylim(y-zoom, y+zoom)
     fig.canvas.draw()
-    
+
+#matplotlib.use('Qt5Agg')
+#matplotlib.use('Gtk4Agg')
+matplotlib.use('TkAgg')
+
 parser = argparse.ArgumentParser(description='Plot OpenAir airspace file')
 parser.add_argument("-n", "--no-arc", action="store_true",
                     help="Resolve arcs as straight line")
@@ -116,6 +168,10 @@ parser.add_argument("-f", "--fast-arc", action="store_true",
                     help="Resolve arcs with less quality (10 degree steps)")
 parser.add_argument("-c", "--show-coords", action="store_true",
                     help="Show latitude/longitude of points in plot")
+parser.add_argument("-o", "--only", action="append",
+                    help="Show only given airspace")
+parser.add_argument("-i", "--intersects", action="store_true",
+                    help="Show intersection between airspaces")
 parser.add_argument("filename")
 args = parser.parse_args()
 common.setArgs(args)
@@ -132,9 +188,20 @@ records = []
 for record, error in reader:
     if error:
         raise error
-    records.append(record)
+    if args.only:
+        if common.getAirspaceName2(record) in args.only:
+            records.append(record)
+    else:
+        records.append(record)
 
 common.resolveRecordArcs(records)
+common.createPolygons(records)
+common.checkHeights(records)
+
+if args.intersects:
+    overlap = common.getOverlappingAirspaces(records)
+else:
+    overlap = []
     
-plot(records)
+plot(records, overlap)
     

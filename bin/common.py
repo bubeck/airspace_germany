@@ -8,10 +8,17 @@
 
 import math
 from pprint import pprint
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, LineString
+from shapely.validation import explain_validity
+import shapely
 import sys
+from enum import Enum
+import re
 
 args = None
+
+def LINE():
+    return sys._getframe(1).f_lineno
 
 #
 # Set the global command line argument into this namespace, so
@@ -23,6 +30,162 @@ def setArgs(globalArgs):
     global args
 
     args = globalArgs
+
+class Prio(Enum):
+    OK = 0
+    ERR = 1
+    WARN = 2
+
+problem_count = [0, 0, 0]
+
+def problem(prio, message, lineno = None):
+    global problem_count, prio_name, args
+    
+    if lineno != None:
+        in_line = f', line {lineno}'
+    else:
+        in_line = ""
+
+    message = f'{prio.name}{in_line}: {message}'
+    
+    if "ignore_errors" in args and args.ignore_errors != None and message in args.ignore_errors:
+        return
+    
+    print_out = True
+    if "errors_only" in args and args.errors_only:
+        if prio.value >= Prio.WARN.value:
+            print_out = False    
+    if print_out:
+        print(message)
+        
+    problem_count[prio.value] = problem_count[prio.value] + 1
+
+def printProblemCounts():
+    global problem_count, prio_name
+
+    for prio in Prio:
+        print(f'{problem_count[prio.value]} {prio.name}')
+
+    return problem_count[prio.OK.value] > 0
+
+def iH(record1, record2):
+    if record1["ceiling_ft"] > record2["floor_ft"] and record1["ceiling_ft"] < record2["ceiling_ft"]:
+        return True
+    if record1["floor_ft"] >= record2["floor_ft"] and record1["floor_ft"] < record2["ceiling_ft"]:
+        return True
+    if record1["floor_ft"] >= record2["floor_ft"] and record1["ceiling_ft"] < record2["ceiling_ft"]:
+        return True
+    return False
+
+def intersectsInHeight(record1, record2):
+    return iH(record1, record2) or iH(record2, record1)
+
+def getOverlappingAirspaces(records):
+    overlap = []
+    num_records = len(records)
+    for i in range(0, num_records):
+        record1 = records[i]
+        for j in range(i+1, num_records):
+            record2 = records[j]
+            if intersectsInHeight(record1, record2):
+                if record1["polygon"].intersects(record2["polygon"]):
+                    try:
+                        intersection = shapely.intersection(record1["polygon"], record2["polygon"])
+                        area = intersection.area
+                        if area > 0:
+                            overlap.append([record1, record2])
+                    except shapely.errors.GEOSException as e:
+                        problem(Prio.ERR, "Invalid Overlapping Airspaces " + getAirspaceName2(record1) + ", " + getAirspaceName2(record2), e)
+
+
+    return overlap
+
+def checkHeightFL(record, h):
+    prio = Prio.OK
+    
+    height = record[h]
+    unit = height[:2]
+    if unit.upper() == "FL" and unit != "FL":   # FL is not spelled as FL
+        if prio.value < Prio.WARN.value:
+            prio = Prio.WARN
+    fl = height[2:].strip()
+    if fl == "":
+        if prio.value < Prio.ERR.value:
+            prio = Prio.ERR
+    else:
+        if fl.isnumeric():
+            fl = int(fl)
+            if int(fl / 5) * 5 != fl:
+                if prio.value < Prio.WARN.value:
+                    prio = Prio.WARN
+            record[h + "_ft"] = fl * 100
+    return prio
+
+def checkHeightFT(record, h):
+    prio = Prio.OK
+
+    height = record[h]
+    m = re.match(r"(\d+)\s*(\w+)\s*(\w+)", height)
+    if m:
+        if not m.group(1).isdecimal():
+            return Prio.ERR
+        height = int(m.group(1))
+        if int(height/100)*100 != height:
+            if prio.value < Prio.WARN.value:
+                prio = Prio.WARN
+        unit = m.group(2).upper()
+        if not unit in ["FT"]:
+            return Prio.ERR
+        record[h + "_ft"] = height
+        ref = m.group(3).upper()
+        if ref == "MSL":
+            if prio.value < Prio.WARN.value:
+                prio = Prio.WARN
+        elif not ref in ["AGL", "AMSL"]:
+            return Prio.ERR
+        return prio
+
+    return Prio.ERR
+    
+def checkHeight(record, h):
+    height = record[h].strip()
+    if height.upper() in ["GND", "SFC"]:
+        record[h + "_ft"] = 0
+        return Prio.OK
+    if height.upper().startswith("FL"):
+        return checkHeightFL(record, h)
+    if height[0].isdecimal():
+        return checkHeightFT(record, h)
+    
+    return Prio.ERR
+
+def checkHeights(records):
+
+    """
+    Walk through all records and check all heights given for each airspace.
+    A height must follow a convention to be valid.
+    """
+    
+    for record in records:
+        for h in ["floor", "ceiling"]:
+            if h in record:
+                prio = checkHeight(record, h)
+                if prio.value > Prio.OK.value:
+                    problem(prio, f'Incorrect height "{record[h]}" in {getAirspaceName2(record)}')
+            else:
+                problem(Prio.ERR, f'Missing height "{h}" in {getAirspaceName2(record)}')
+
+def getAirspaceName(record):
+    n1 = f'{record["name"]}:{record["class"]}'
+    if "floor" in record and "ceiling" in record:
+        h1 = f'({record["floor"]}-{record["ceiling"]})'
+    else:
+        h1 = ""
+    return (n1, h1)
+
+def getAirspaceName2(record):
+    (n,h) = getAirspaceName(record)
+    return f'{n} {h}'
 
 # Converter function to convert nautical miles to km
 #
@@ -151,8 +314,8 @@ def resolveArcs(record):
                 else:
                     elements_resolved.extend(resolve_DB(element["center"], element["start"], element["end"], element["clockwise"]))
             else:
-                elements_resolved.extend(createElementPoint(element["start"][0], element["start"][1]))
-                elements_resolved.extend(createElementPoint(element["end"][0], element["end"][1]))
+                elements_resolved.append(createElementPoint(element["start"][0], element["start"][1]))
+                elements_resolved.append(createElementPoint(element["end"][0], element["end"][1]))
         elif element["type"] == "circle":
             elements_resolved.extend(resolve_circle(element))
         else:
@@ -165,13 +328,22 @@ def resolveArcs(record):
 def createElementPoint(lat, lon):
     element = {}
     element["type"] = "point"
-    element["location"] = [ lat, lon]
+    element["location"] = [ lat, lon ]
     return element
 
 def resolve_DA(center, radius_km, start_angle, end_angle, clockwise, use_edge):
     global args
     elements = []
-    
+
+    if clockwise:
+        reverse = False
+    else:
+        reverse = True
+        clockwise = True
+        tmp = start_angle
+        start_angle = end_angle
+        end_angle = tmp
+        
     if args.fast_arc:
         dir = 10
     else:
@@ -212,6 +384,9 @@ def resolve_DA(center, radius_km, start_angle, end_angle, clockwise, use_edge):
         elements.append(element)
         angle = angle + dir
 
+    if reverse:
+        elements.reverse()
+        
     return elements
 
 def resolve_circle(element):

@@ -9,7 +9,9 @@ import sys
 from datetime import datetime
 import os
 import common
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, LineString
+from shapely.validation import explain_validity
+import shapely
 import re
 
 def findLatLon(p):
@@ -58,18 +60,6 @@ def checkCircles(records):
                 #pprint(element)
                 findNearCircles(record, element)
 
-def getAirspaceName(record):
-    n1 = f'{record["name"]}:{record["class"]}'
-    if "floor" in record and "ceiling" in record:
-        h1 = f'({record["floor"]}-{record["ceiling"]})'
-    else:
-        h1 = ""
-    return (n1, h1)
-
-def getAirspaceName2(record):
-    (n,h) = getAirspaceName(record)
-    return f'{n} {h}'
-
 def findingForTwoPoints(message, record1, record2, p1, p2):
     global records
     global findings
@@ -99,6 +89,12 @@ def findingForTwoPoints(message, record1, record2, p1, p2):
         h2 = f'({record2["floor"]}-{record2["ceiling"]})'
     else:
         h2 = ""
+
+    n1 = common.getAirspaceName2(record1)
+    n2 = common.getAirspaceName2(record2)
+    h1 = ""
+    h2 = ""
+    
     l1 = max(len(n1), len(n2))
     l2 = max(len(h1), len(h2))
 
@@ -119,7 +115,7 @@ def findingForTwoPoints(message, record1, record2, p1, p2):
 
     message = message + f'  {n1:{l1}} {h1:{l2}}: {ll1} ({c1}x: lineno {p1ss})' + "\n"
     message = message + f'  {n2:{l1}} {h2:{l2}}: {ll2} ({c2}x: lineno {p2ss})' + "\n"
-    problem(2, message)
+    common.problem(common.Prio.WARN, message)
     
 def findNearPoints(record_base, p1):
     global records
@@ -177,13 +173,13 @@ def checkDB(records):
                     diff_m = abs(dist1_cm-dist2_cm)/100
                     if diff_m > 40:
                         if diff_m > 100:
-                            prio = 1
+                            prio = common.Prio.ERR
                         else:
-                            prio = 2
+                            prio = common.Prio.WARN
                         lineno = None
                         if "lineno" in element:
                             lineno = element["lineno"]
-                        problem(prio, f'DB has a big difference radius between start and end of {diff_m:.0f}m', lineno)
+                        common.problem(prio, f'DB has a big difference radius between start and end of {diff_m:.0f}m', lineno)
                                 
 def getFirstPoint(element):
     if element["type"] == "point":
@@ -230,43 +226,11 @@ def checkOpenAirspaces(records):
         if firstPoint != lastPoint:
             (gap_cm, bearing) = common.geo_distance(firstPoint[0], firstPoint[1], lastPoint[0], lastPoint[1])
             gap_km = gap_cm / 100000
-            (name,dimension) = getAirspaceName(record)
+            (name,dimension) = common.getAirspaceName(record)
             line_start = None
             if "lineno" in firstElement:
                 line_start = firstElement["lineno"]
-            problem(2, f'airspace "{name},{dimension}" is not closed with a gap of {gap_km:.1f}km.', line_start)
-
-problem_count = [0, 0, 0]
-prio_name = [ "fatal", "error", "warning" ]
-
-def problem(prio, message, lineno = None):
-    global problem_count, prio_name, args
-    
-    if lineno != None:
-        in_line = f', line {lineno}'
-    else:
-        in_line = ""
-
-    message = f'{prio_name[prio]}{in_line}: {message}'
-    if args.ignore_errors != None and message in args.ignore_errors:
-        return
-    
-    print_out = True
-    if args.errors_only:
-        if prio >= 2:
-            print_out = False    
-    if print_out:
-        print(message)
-        
-    problem_count[prio] = problem_count[prio] + 1
-
-def printProblemCounts():
-    global problem_count, prio_name
-
-    for prio in range(1,3):
-        print(f'{problem_count[prio]} {prio_name[prio]}')
-
-    return problem_count[1] > 0
+            common.problem(common.Prio.WARN, f'airspace "{name},{dimension}" is not closed with a gap of {gap_km:.1f}km.', line_start)
 
 def checkNameEncoding(records):
 
@@ -280,7 +244,7 @@ def checkNameEncoding(records):
             lineno = None
             if "lineno" in record:
                 lineno = record["lineno"]
-            problem(1, f'Airspace name contains non-ascii characters: "{name}"', lineno)
+            common.problem(common.Prio.ERR, f'Airspace name contains non-ascii characters: "{name}"', lineno)
   
 def checkEncoding(fp):
 
@@ -297,7 +261,7 @@ def checkEncoding(fp):
         if not line.isascii():
             if not banner_printed:
                 banner_printed = True
-                problem(2, "Use of non-ascii characters detected. Please switch to ASCII as some embedded devices do not have full character set.\nUsing 'iconv -f iso-8859-1 -t ascii//TRANSLIT' on the linux command line may help.")
+                common.problem(common.Prio.WARN, "Use of non-ascii characters detected. Please switch to ASCII as some embedded devices do not have full character set.\nUsing 'iconv -f iso-8859-1 -t ascii//TRANSLIT' on the linux command line may help.")
             message = "Use of non-ascii characters detected.\n"
             message = message + line + "\n"
             for char in line:
@@ -306,8 +270,26 @@ def checkEncoding(fp):
                 else:
                     message = message + "^"
             message = message + "\n"
-            problem(2, message, lineno)
+            common.problem(common.Prio.WARN, message, lineno)
 
+def isSelfIntersecting(polygon):
+    
+    for i in range(0, len(polygon.exterior.coords)-1):
+        line1 = LineString([polygon.exterior.coords[i],
+                           polygon.exterior.coords[i+1]])
+        #print(line1)
+        for j in range(i+1, len(polygon.exterior.coords)-1):
+            line2 = LineString([polygon.exterior.coords[j],
+                               polygon.exterior.coords[j+1]])
+            if line1.crosses(line2):
+                message = f'Illegal line crossing:\n'
+                message += common.strLatLon(polygon.exterior.coords[i]) + " " + common.strLatLon(polygon.exterior.coords[i+1]) + "\n"
+                message += common.strLatLon(polygon.exterior.coords[j]) + " " + common.strLatLon(polygon.exterior.coords[j+1])
+                common.problem(common.Prio.WARN, message)
+                return True
+            
+    return False
+    
 def checkInvalidPolygons(records):
 
     """
@@ -316,69 +298,45 @@ def checkInvalidPolygons(records):
     """
     
     for record in records:
+        #print("checkInvalidPolygon(",common.getAirspaceName2(record))
         if not record["polygon"].is_valid:
-            problem(1, "Invalid Polygon for " + getAirspaceName2(record))
+            if isSelfIntersecting(record["polygon"]):
+                common.problem(common.Prio.ERR, "Invalid Polygon for " + common.getAirspaceName2(record) + ": " + explain_validity(record["polygon"]))
 
-def checkHeightFL(height):
-    fl = height[:2]
-    if fl.upper() == "FL" and fl != "FL":
-        return 2
-    h = height[2:].strip()
-    if h == "":
-        return 1
-    else:
-        if h.isnumeric():
-            fl = int(h)
-            if int(fl / 5) * 5 != fl:
-                return 2
-    return 0
+def iH(record1, record2):
+    if record1["ceiling_ft"] > record2["floor_ft"] and record1["ceiling_ft"] < record2["ceiling_ft"]:
+        return True
+    if record1["floor_ft"] >= record2["floor_ft"] and record1["floor_ft"] < record2["ceiling_ft"]:
+        return True
+    if record1["floor_ft"] >= record2["floor_ft"] and record1["ceiling_ft"] < record2["ceiling_ft"]:
+        return True
+    return False
 
-def checkHeightFT(height):
-    m = re.match("(\d+)\s*(\w+)\s*(\w+)", height)
-    if m:
-        if not m.group(1).isdecimal():
-            return 1
-        h = int(m.group(1))
-        if int(h/100)*100 != h:
-            return 2
-        unit = m.group(2).upper()
-        if not unit in ["FT"]:
-            return 1
-        ref = m.group(3).upper()
-        if ref == "MSL":
-            return 2
-        if not ref in ["AGL", "AMSL"]:
-            return 1
-        return 0
-    return 1
-    
-def checkHeight(height):
-    if height.upper() in ["GND", "SFC"]:
-        return 0
-    if height.upper().startswith("FL"):
-        return checkHeightFL(height)
-    if height[0].isdecimal():
-        return checkHeightFT(height)
-    
-    return 1
+def intersectsInHeight(record1, record2):
+    return iH(record1, record2) or iH(record2, record1)
 
-def checkHeights(records):
+def getOverlappingAirspaces(records):
+    overlap = []
+    num_records = len(records)
+    for i in range(0, num_records):
+        record1 = records[i]
+        for j in range(i+1, num_records):
+            record2 = records[j]
+            if intersectsInHeight(record1, record2):
+                if record1["polygon"].intersects(record2["polygon"]):
+                    #print("Check Overlapping Airspaces " + common.getAirspaceName2(record1) + ", " + common.getAirspaceName2(record2))
+                    intersection = shapely.intersection(record1["polygon"], record2["polygon"])
+                    area = intersection.area
+                    if area > 0:
+                        overlap.append([record1, record2])
 
-    """
-    Walk through all records and check all heights given for each airspace.
-    A height must follow a convention to be valid.
-    """
-    
-    for record in records:
-        for h in ["floor", "ceiling"]:
-            if h in record:
-                prio = checkHeight(record[h])
-                if prio > 0:
-                    problem(prio, f'Incorrect height "{record[h]}" in {getAirspaceName2(record)}')
-            else:
-                problem(1, f'Missing height "{h}" in {getAirspaceName2(record)}')
+    return overlap
 
-                
+def checkOverlappingAirspaces(records):
+    overlap = common.getOverlappingAirspaces(records)
+    for record1,record2 in overlap:
+        common.problem(common.Prio.ERR, "Overlapping Airspaces " + common.getAirspaceName2(record1) + ", " + common.getAirspaceName2(record2))
+
 def fixOpenAirspaces(fp, records):
 
     """
@@ -417,6 +375,8 @@ findings = []
 parser = argparse.ArgumentParser(description='Check OpenAir airspace file for consistency')
 parser.add_argument("-e", "--errors-only", action="store_true",
                     help="Print only errors and no warnings")
+parser.add_argument("-o", "--check-overlap", action="store_true",
+                    help="Check, if airspaces overlap")
 parser.add_argument("-d", "--distance",
                     help="Specify the distance in meters to see two points as close",
                     type=int, default=100)
@@ -465,9 +425,11 @@ if args.fix_closing:
 
 common.resolveRecordArcs(records)
 common.createPolygons(records)
+common.checkHeights(records)
 
 checkInvalidPolygons(records)
-checkHeights(records)
+if args.check_overlap:
+    checkOverlappingAirspaces(records)
 checkDB(records)
 checkEncoding(content)
 checkOpenAirspaces(records)
@@ -475,7 +437,7 @@ checkNameEncoding(records)
 checkCircles(records)
 checkPoints(records)
 
-ret = printProblemCounts()
+ret = common.printProblemCounts()
 
 sys.exit(ret)
 
