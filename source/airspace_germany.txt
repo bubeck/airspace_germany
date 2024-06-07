@@ -3,7 +3,7 @@
 * Open-Airspace-file Germany created by Peter Kemme
 * please send any comment to peter.kemme[at]gmx.de
 *
-* effective from 2st May 2024
+* effective from 2nd June 2024
 * All data and information contained in this data file is provided without guarantee as to their completeness or correctness.   
 * Any conclusions drawn from these data and information are the sole responsibility of the user.
 * 
@@ -68,13 +68,29 @@
 * PJE EDCE new; EDVI + EDXT deleted 
 *
 *
-* changes 2024_03 -> 2024_05
+* changes 2024_03 -> 2024_04
 * ED-R Stepenitz deleted 
 * eagle protection area near Unterwoessen updated
 * ED-R´s Eckernfoerde, Hohe Duene + Kiel added 
 *
+* changes 2024_05 -> 2024_06
+* ED-R Peenemuende added
+*
 *################################################################################
 *
+*bis 31.12.2024
+AC R
+AN ED-R PEENEMUENDE 
+AH 5000ft MSL
+AL GND
+DP 54:10:15 N 013:41:37 E  
+DP 54:20:26 N 013:47:26 E  
+DP 54:20:08 N 013:53:04 E 
+DP 54:07:17 N 013:55:30 E  
+DP 54:06:08 N 013:52:15 E  
+DP 54:08:35 N 013:43:30 E 
+DP 54:10:15 N 013:41:37 E
+
 
 *bis 12.4.2025
 AC R
@@ -3588,27 +3604,25 @@ AC C
 AN Muenchen
 AH FL100
 AL 3500ft MSL
-DP 48:29:49 N 011:11:55 E
-DP 48:34:07 N 012:07:09 E 
-V D=+
-V X= 48:24:13 N 012:19:06 E 
-DB 48:34:07 N 012:07:09 E, 48:32:47 N 012:33:10 E
-DP 48:32:47 N 012:33:10 E
-DP 48:30:26 N 012:30:03 E 
-V D=+
-V X=48:21:14 N 011:47:10 E 
-DB 48:30:26 N 012:30:03 E, 48:22:53 N 012:32:05 E
-DP 48:22:53 N 012:32:05 E
-DP 48:22:28 N 012:26:07 E
-V D=-
-V X=48:21:14 N 011:47:10 E 
-DB 48:22:28 N 012:26:07 E, 48:31:15 N 012:23:12 E
-DP 48:31:15 N 012:23:12 E
 DP 48:25:39 N 011:10:15 E 
+DP 48:31:15 N 012:23:12 E 
+V D=+
+V X=48:21:14 N 011:47:10 E
+DB 48:31:15 N 012:23:12 E, 48:22:28 N 012:26:07 E
+DP 48:22:28 N 012:26:07 E
 V D=+
 V X=48:21:14 N 011:47:10 E 
-DB 48:25:39 N 011:10:15 E, 48:29:49 N 011:11:55 E
-DP 48:29:49 N 011:11:55 E
+DB 48:22:28 N 012:26:07 E, 48:16:42 N 012:25:31 E
+DP 48:16:42 N 012:25:31 E
+DP 48:11:08 N 011:12:56 E
+V D=+
+V X=48:21:14 N 011:47:10 E
+DB 48:11:08 N 011:12:56 E, 48:19:52 N 011:09:45 E
+DP 48:19:52 N 011:09:45 E
+V D=+
+V X=48:21:14 N 011:47:10 E
+DB 48:19:52 N 011:09:45 E , 48:25:39 N 011:10:15 E
+DP 48:25:39 N 011:10:15 E
 
 *EDDMCLCB
 AC C  
@@ -3911,9 +3925,7 @@ DP 49:20:39 N 10:40:35 E
 DP 49:20:36 N 10:40:24 E
 DP 49:20:36 N 10:40:17 E
 DP 49:20:36 N 10:39:58 E
-DP 49:20:36 N 10:39:58 E
 DP 49:20:40 N 10:39:45 E
-DP 49:20:39 N 10:39:39 E
 DP 49:20:39 N 10:39:39 E
 DP 49:20:39 N 10:39:35 E
 DP 49:20:39 N 10:39:29 E
@@ -4486,7 +4498,6 @@ DP 48:18:22 N 7:41:56 E
 DP 48:18:23 N 7:41:57 E
 DP 48:19:05 N 7:44:02 E
 DP 48:19:38 N 7:44:40 E
-DP 48:19:38 N 7:44:40 E
 *end boundary
 DP 48:21:40 N 7:44:09 E
 
@@ -4795,7 +4806,6 @@ AH 7000ft MSL
 AL GND
 DP 48:01:13 N 12:50:42 E
 *along the German-Austrian border
-DP 48:01:13 N 12:50:42 E
 DP 48:00:24 N 12:51:27 E
 DP 47:58:03 N 12:52:13 E
 DP 47:57:36 N 12:52:54 E
@@ -5700,7 +5710,6 @@ DP 49:27:59 N 6:22:48 E
 DP 49:27:54 N 6:22:51 E
 DP 49:27:51 N 6:22:39 E
 DP 49:27:52 N 6:22:29 E
-DP 49:27:52 N 6:22:29 E
 DP 49:27:59 N 6:22:27 E
 DP 49:27:59 N 6:22:17 E
 DP 49:28:07 N 6:22:17 E
@@ -5813,7 +5822,6 @@ DP 49:54:15 N 6:13:56 E
 DP 49:54:37 N 6:13:37 E
 DP 49:54:39 N 6:13:47 E
 DP 49:54:50 N 6:14:02 E
-DP 49:55:16 N 6:13:43 E
 DP 49:55:16 N 6:13:43 E
 *end border
 DP 49:55:21 N 6:13:10 E
