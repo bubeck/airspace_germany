@@ -172,7 +172,7 @@ def checkDB(records):
                     (dist2_cm, bearing) = common.geo_distance(element["center"][0],element["center"][1], element["end"][0], element["end"][1])
                     diff_m = abs(dist1_cm-dist2_cm)/100
                     if diff_m > 40:
-                        if diff_m > 100:
+                        if diff_m > 500:
                             prio = common.Prio.ERR
                         else:
                             prio = common.Prio.WARN

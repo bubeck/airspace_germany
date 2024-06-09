@@ -138,7 +138,7 @@ def checkHeightFT(record, h):
             return Prio.ERR
         record[h + "_ft"] = height
         ref = m.group(3).upper()
-        if ref == "MSL":
+        if ref in ["MSL", "GND"]:
             if prio.value < Prio.WARN.value:
                 prio = Prio.WARN
         elif not ref in ["AGL", "AMSL"]:
@@ -272,22 +272,27 @@ def get_kx_ky(lat):
     return (kx, ky)
 
 def decimal_degrees_to_dms(decimal_degrees):
-    mnt,sec = divmod(decimal_degrees*3600,60)
-    deg,mnt = divmod(mnt, 60)
-    return (round(deg),round(mnt),round(sec))
-                  
+    #mnt,sec = divmod(decimal_degrees*3600,60)
+    #deg,mnt = divmod(mnt, 60)
+    #return (round(deg),round(mnt),round(sec))
+    decimals, number = math.modf(decimal_degrees)
+    deg = int(number)
+    mnt = round(decimals * 60)
+    sec = (decimal_degrees - deg - mnt / 60) * 3600.00
+    return deg,mnt,round(sec)
+
 def strDegree(v, width):
     (degrees,minutes,seconds) = decimal_degrees_to_dms(abs(v))
     return f'{degrees:0{width}d}:{minutes:02d}:{seconds:02d}'
     
 def strLatLon(P):
-    result = strDegree(P[0], 2) + " "
+    result = strDegree(abs(P[0]), 2) + " "
     if P[0] >= 0:
         result = result + "N "
     else:
-        result = result + "N "
+        result = result + "S "
 
-    result = result + strDegree(P[1], 3) + " "
+    result = result + strDegree(abs(P[1]), 3) + " "
     if P[1] >= 0:
         result = result + "E "
     else:
@@ -424,3 +429,9 @@ def createPolygonOfRecord(record):
     for element in record["elements_resolved"]:
         points.append(element["location"])
     record["polygon"] = Polygon(points)
+
+def find_airspace(records, name):
+    for record in records:
+        if getAirspaceName2(record) == name:
+            return record
+    return None
