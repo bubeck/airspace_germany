@@ -300,8 +300,9 @@ def checkInvalidPolygons(records):
     for record in records:
         #print("checkInvalidPolygon(",common.getAirspaceName2(record))
         if not record["polygon"].is_valid:
+            common.problem(common.Prio.ERR, "Invalid Polygon for " + common.getAirspaceName2(record) + ": " + explain_validity(record["polygon"]))
             if isSelfIntersecting(record["polygon"]):
-                common.problem(common.Prio.ERR, "Invalid Polygon for " + common.getAirspaceName2(record) + ": " + explain_validity(record["polygon"]))
+                common.problem(common.Prio.ERR, "Invalid (selfintersect) Polygon for " + common.getAirspaceName2(record) + ": " + explain_validity(record["polygon"]))
 
 def iH(record1, record2):
     if record1["ceiling_ft"] > record2["floor_ft"] and record1["ceiling_ft"] < record2["ceiling_ft"]:

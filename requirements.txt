@@ -1,0 +1,2 @@
+# Install aerofiles package and testing packages
+aerofiles==1.2.1

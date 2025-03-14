@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.style as mplstyle
 from matplotlib.backend_bases import MouseButton
 from matplotlib.backends.backend_pdf import PdfPages
-from shapely.geometry import Polygon, LineString
+from shapely.geometry import Polygon, LineString, Point
 from shapely.validation import explain_validity
 import shapely
 import sys
@@ -29,6 +29,7 @@ def plot_line(plt, x1, y1, x2, y2, color="black"):
     #print(f'plot_line(x1={x1}, y1={y1}, x2={x2}, y2={y2})')
 
 last_pos = None
+plot_records = []
 
 def plot_reset():
     global last_pos
@@ -69,7 +70,10 @@ def plot(records, overlap):
     global args
     global ax
     global fig
+    global plot_records
 
+    plot_records = records
+    
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
 
@@ -152,14 +156,36 @@ def plot(records, overlap):
     # ax.margins(x=8.877760411607648,y=48.773972056413555)
     plt.show()
 
+def find_under(latLon):
+    
+    print(f'Searching for {latLon}')
+
+    r = []
+    has_ft = True
+    point = Point(latLon[0], latLon[1])
+    for record in plot_records:
+        if record["polygon"].contains(point):
+            r.append(record)
+            if not "floor_ft" in record:
+                has_ft = False
+
+    if has_ft:
+        r.sort(key=lambda x:x["floor_ft"])
+
+    for record in r:
+        print(common.getAirspaceName2(record))
+    
 def on_press(event):
     global ax, fig, zoom
 
+    x,y = event.xdata, event.ydata
+
     if event.button == MouseButton.LEFT:
         zoom = zoom / 2
-    if event.button == MouseButton.MIDDLE or event.button == MouseButton.RIGHT:
+    if event.button == MouseButton.RIGHT:
         zoom = zoom * 2
-    x,y = event.xdata, event.ydata
+    if event.button == MouseButton.MIDDLE:
+        find_under([y,x])
 
     lat_lon = common.strLatLon([y,x])
     
@@ -187,14 +213,26 @@ def airspace_readfile(filename):
             raise error
         if args.only:
             if common.getAirspaceName2(record) in args.only:
+                #print("Read ", common.getAirspaceName2(record))
                 records.append(record)
         else:
+            print("Read ", common.getAirspaceName2(record))
             records.append(record)
 
     common.resolveRecordArcs(records)
     common.createPolygons(records)
     common.checkHeights(records)
+    #records = airspace_find_low(records)
     return records
+
+def airspace_find_low(records):
+    r2 = []
+    for r in records:
+        #if "polygon" in r:
+        #    print(r["polygon"].area, r["name"])
+        if r["floor_ft"] < 10000:
+            r2.append(r)
+    return r2
 
 def airspace_find_pt(record, element_searched):
     for element in record["elements_resolved"]:
@@ -207,6 +245,21 @@ def airspace_find_pt(record, element_searched):
             if loc1[0] == loc2[0] and loc1[1] == loc2[1]:
                 return element
     return None
+
+# How similar is record2 to record1?
+# 0-100%
+def airspace_similar_shapely(record1, record2):
+    if not record1["polygon"].is_valid:
+        #print("Ignoring", common.getAirspaceName2(record1), "because invalid")
+        return 0
+    if not record2["polygon"].is_valid:
+        #print("Ignoring", common.getAirspaceName2(record2), "because invalid")
+        return 0
+    
+    if record1["polygon"].equals(record2["polygon"]):
+        return 100
+    else:
+        return 0
 
 # How similar is record2 to record1?
 # 0-100%
@@ -248,7 +301,7 @@ def airspace_find_similar(record1, records2):
     best_simular = 0
     best_simular_r2 = None
     for record2 in records2:
-        simular = airspace_similar(record1, record2)
+        simular = airspace_similar_shapely(record1, record2)
         if simular > best_simular:
             best_simular = simular
             best_simular_r2 = record2
@@ -288,10 +341,11 @@ if args.diff:
     added = []
     for record1 in records_1:
         asn = common.getAirspaceName2(record1)
-        breakpoint()
+        #breakpoint()
         (best_simular, best_simular_r) = airspace_find_similar(record1, records)
         if best_simular == 100:
             # They are identical
+            ic(common.getAirspaceName2(record1), common.getAirspaceName2(best_simular_r))
             identical.append(record1)
             best_simular_r["color"] = "grey"
         elif best_simular > 50:

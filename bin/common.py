@@ -14,6 +14,7 @@ import shapely
 import sys
 from enum import Enum
 import re
+from icecream import ic
 
 args = None
 
@@ -134,11 +135,14 @@ def checkHeightFT(record, h):
             if prio.value < Prio.WARN.value:
                 prio = Prio.WARN
         unit = m.group(2).upper()
-        if not unit in ["FT"]:
+        if not unit in ["FT", "M"]:
             return Prio.ERR
-        record[h + "_ft"] = height
+        if unit == "M":
+            record[h + "_ft"] = height * 3.28084     # m to feet
+        else:
+            record[h + "_ft"] = height
         ref = m.group(3).upper()
-        if ref in ["MSL", "GND"]:
+        if ref in ["MSL", "GND", "SFC"]:
             if prio.value < Prio.WARN.value:
                 prio = Prio.WARN
         elif not ref in ["AGL", "AMSL"]:
@@ -148,6 +152,7 @@ def checkHeightFT(record, h):
     return Prio.ERR
     
 def checkHeight(record, h):
+    #ic(record["name"], h)
     height = record[h].strip()
     if height.upper() in ["GND", "SFC"]:
         record[h + "_ft"] = 0
@@ -171,7 +176,7 @@ def checkHeights(records):
             if h in record:
                 prio = checkHeight(record, h)
                 if prio.value > Prio.OK.value:
-                    problem(prio, f'Incorrect height "{record[h]}" in {getAirspaceName2(record)}')
+                    problem(prio, f'Height "{record[h]}" in {getAirspaceName2(record)}')
             else:
                 problem(Prio.ERR, f'Missing height "{h}" in {getAirspaceName2(record)}')
 
@@ -275,11 +280,24 @@ def decimal_degrees_to_dms(decimal_degrees):
     #mnt,sec = divmod(decimal_degrees*3600,60)
     #deg,mnt = divmod(mnt, 60)
     #return (round(deg),round(mnt),round(sec))
+    
+    #decimals, number = math.modf(decimal_degrees)
+    #deg = int(number)
+    #mnt = round(decimals * 60)
+    #sec = (decimal_degrees - deg - mnt / 60) * 3600.00
+    # return deg,mnt,round(sec)
+
     decimals, number = math.modf(decimal_degrees)
     deg = int(number)
-    mnt = round(decimals * 60)
-    sec = (decimal_degrees - deg - mnt / 60) * 3600.00
-    return deg,mnt,round(sec)
+    mnt = int(decimals * 60)
+    sec = round((decimal_degrees - deg - mnt / 60) * 3600.00)
+    if sec == 60:
+        sec = 0
+        mnt += 1
+        if mnt == 60:
+            mnt = 0
+            deg += 1
+    return deg, mnt, sec
 
 def strDegree(v, width):
     (degrees,minutes,seconds) = decimal_degrees_to_dms(abs(v))
@@ -319,6 +337,7 @@ def resolveArcs(record):
                 else:
                     elements_resolved.extend(resolve_DB(element["center"], element["start"], element["end"], element["clockwise"]))
             else:
+                #ic(element)
                 elements_resolved.append(createElementPoint(element["start"][0], element["start"][1]))
                 elements_resolved.append(createElementPoint(element["end"][0], element["end"][1]))
         elif element["type"] == "circle":
@@ -428,7 +447,13 @@ def createPolygonOfRecord(record):
 
     for element in record["elements_resolved"]:
         points.append(element["location"])
+    #ic(record)
+    if len(points) < 3:
+        return
     record["polygon"] = Polygon(points)
+    if not record["polygon"].is_valid:
+        print("ERR", getAirspaceName2(record), "is not valid")
+        #sys.exit(1)
 
 def find_airspace(records, name):
     for record in records:

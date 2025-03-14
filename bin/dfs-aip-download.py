@@ -24,6 +24,7 @@ import re
 import base64
 import os.path
 import sys
+from icecream import ic
 
 def download(url):
     page=1
@@ -32,7 +33,11 @@ def download(url):
     image_pattern = re.compile(r'src="data:image/png;base64,(.*)" alt=')
 
     u = urllib.parse.urlparse(url)
-
+    dirname = u.path.split("/")[2]
+    print(f'Storing into directory {dirname}')
+    os.makedirs(dirname + "/pages", exist_ok=True)
+    os.chdir(dirname)
+    
     while True:
         print(f'{page: 4} {url}')
         with urllib.request.urlopen(url) as f:
@@ -53,11 +58,12 @@ def download(url):
                     image_base64 = match.group(1).strip()
                     #ic(image_base64)
                     image = base64.b64decode(image_base64)
-                    filename = f'page-{page:04}.png'
-                    #filename = f'{page_name}.png'
+                    filename = f'pages/page-{page:04}.png'
+                    filename_long = f'{page_name}.png'
                     print(f'  => {page_name} => {filename}')
                     with open(filename, "wb") as file:
                         file.write(image)
+                    os.symlink(filename, filename_long)
                     if next_url == "#":
                         return
                     break
