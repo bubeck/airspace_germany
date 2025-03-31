@@ -452,7 +452,7 @@ def createPolygonOfRecord(record):
         return
     record["polygon"] = Polygon(points)
     if not record["polygon"].is_valid:
-        print("ERR", getAirspaceName2(record), "is not valid")
+        print("WARN", getAirspaceName2(record), "is (probably) not valid. If no error occurs, ignore this warning.")
         #sys.exit(1)
 
 def find_airspace(records, name):

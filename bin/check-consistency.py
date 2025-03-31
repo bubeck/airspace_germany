@@ -299,8 +299,10 @@ def checkInvalidPolygons(records):
     
     for record in records:
         #print("checkInvalidPolygon(",common.getAirspaceName2(record))
+        # "is_valid" is a very fast check, that sometimes gives false positives
         if not record["polygon"].is_valid:
-            common.problem(common.Prio.ERR, "Invalid Polygon for " + common.getAirspaceName2(record) + ": " + explain_validity(record["polygon"]))
+            #common.problem(common.Prio.ERR, "Invalid Polygon for " + common.getAirspaceName2(record) + ": " + explain_validity(record["polygon"]))
+            # In that case do the slow check, to give only real problems:
             if isSelfIntersecting(record["polygon"]):
                 common.problem(common.Prio.ERR, "Invalid (selfintersect) Polygon for " + common.getAirspaceName2(record) + ": " + explain_validity(record["polygon"]))
 
