@@ -3,7 +3,7 @@
 * Open-Airspace-file Germany created by Peter Kemme
 * please send any comment to peter.kemme[x]gmx.de
 *
-* effective from 20th March 2025
+* effective from 6th June 2025
 * All data and information contained in this data file is provided without guarantee as to their completeness or correctness.   
 * Any conclusions drawn from these data and information are the sole responsibility of the user.
 * 
@@ -62,9 +62,27 @@
 * PJE Mosbach added 
 * glider sectors east of EDDC revised
 *
+* changes 2025_03A -> 2025_06
+* ED-R Lindenberg added 
+* PJE Calw + EDUS deleted
+* TMZ-EDDH monitor freq changed 
+* ED-R Klixbuell addded
+* ED-D Mecklenburger Bucht added
+*
 *
 *################################################################################
 *
+
+* bis 1.10.2025
+
+AC R 
+AN ED-R LINDENBERG
+AH 5500ft MSL 
+AL GND
+V X=52:12:33 N 014:07:13 E
+DC 1.3
+
+
 * bis 31.12.2025
 
 AC R 
@@ -79,8 +97,70 @@ DP 54:06:08 N 013:52:15 E
 DP 54:08:35 N 013:43:30 E 
 DP 54:10:15 N 013:41:37 E
 
-* bis 18.3.2026
+AC R
+AN ED-R Klixbuell HX 125.100
+AH 2500ft AGL
+AL GND
+V X=54:48:22 N 008:51:53 E
+DC 0.80
 
+AC Q
+AN ED-D Mecklenburger Bucht Sektor A
+AH 2000ft MSL
+AL GND
+DP 54:30:16 N 011:15:05 E 
+DP 54:29:34 N 011:14:00 E 
+DP 54:28:55 N 011:17:09 E
+DP 54:30:16 N 011:15:05 E
+
+AC Q
+AN ED-D Mecklenburger Bucht Sektor B
+AH 2000ft MSL
+AL GND
+DP 54:26:01 N 011:19:59 E 
+DP 54:30:09 N 011:29:32 E 
+DP 54:33:15 N 011:20:00 E
+DP 54:35:00 N 011:14:00 E 
+DP 54:32:20 N 011:11:56 E 
+DP 54:30:16 N 011:15:05 E
+DP 54:28:55 N 011:17:09 E 
+DP 54:26:01 N 011:19:59 E
+
+AC Q
+AN ED-D Mecklenburger Bucht Sektor C
+AH 2000ft MSL
+AL GND
+DP 54:24:32 N 011:21:27 E 
+DP 54:15:34 N 011:30:16 E 
+DP 54:26:45 N 011:50:00 E
+DP 54:27:50 N 011:40:00 E 
+DP 54:30:00 N 011:30:00 E 
+DP 54:30:09 N 011:29:32 E
+DP 54:26:01 N 011:19:59 E 
+DP 54:24:32 N 011:21:27 E
+
+AC Q
+AN ED-D Mecklenburger Bucht Sektor D
+AH 2000ft MSL
+AL GND
+DP 54:17:01 N 012:08:02 E 
+DP 54:27:00 N 012:00:00 E 
+DP 54:26:45 N 011:50:00 E
+DP 54:15:34 N 011:30:16 E 
+DP 54:17:01 N 012:08:02 E
+
+AC Q
+AN ED-D Mecklenburger Bucht Sektor E
+AH 2000ft MSL
+AL GND
+DP 54:32:27 N 012:28:29 E 
+DP 54:35:05 N 012:14:40 E 
+DP 54:27:00 N 012:00:00 E
+DP 54:17:01 N 012:08:02 E 
+DP 54:32:27 N 012:28:29 E
+
+
+* bis 18.3.2026
 
 AC R
 AN ED-R ECKERNFOERDE
@@ -1530,7 +1610,7 @@ V X=49:05:54 N 008:26:02 E
 DC 2.00
 
 AC R
-AN ED-R134 Wildflecken MON-FRI++
+AN ED-R134 Wildflecken MON-FRI+
 AH 18000ft MSL
 AL GND
 DP 50:24:54 N 009:46:57 E  
@@ -1542,7 +1622,7 @@ DP 50:19:56 N 009:46:51 E
 DP 50:24:54 N 009:46:57 E
 
 AC R
-AN ED-R135A Hammelburg MON-FRI++
+AN ED-R135A Hammelburg MON-FRI+
 AH FL100
 AL GND
 DP 50:07:00 N 009:48:20 E
@@ -6218,15 +6298,15 @@ DP 49:59:09 N 011:47:51 E
 DP 49:53:52 N 011:33:43 E 
 DP 49:59:02 N 011:29:02 E
 
-*AC RMZ
-*AN RMZ EDBC
-*AH 1000ft AGL
-*AL GND
-*DP 51:52:51 N 011:13:32 E
-*DP 51:55:33 N 011:33:01 E
-*DP 51:49:42 N 011:35:07 E
-*DP 51:47:00 N 011:15:40 E
-*DP 51:52:51 N 011:13:32 E
+AC RMZ
+AN RMZ EDBC
+AH 1000ft AGL
+AL GND
+DP 51:52:51 N 011:13:32 E
+DP 51:55:33 N 011:33:01 E
+DP 51:49:42 N 011:35:07 E
+DP 51:47:00 N 011:15:40 E
+DP 51:52:51 N 011:13:32 E
 
 AC RMZ
 AN RMZ EDQC 128.680
@@ -6471,7 +6551,7 @@ DP 50:36:47 N 008:08:43 E
 DP 50:43:29 N 007:55:15 E 
 DP 50:48:12 N 008:01:04 E
 
-AC G
+AC RMZ
 AN RMZ EDRY 118.080
 AH 1000ft AGL
 AL GND
@@ -6900,7 +6980,7 @@ DP 50:05:55 N 007:19:05 E
 DP 50:09:17 N 007:22:22 E
 
 AC TMZ
-AN TMZ-EDDH-A A4671 119.510
+AN TMZ-EDDH-A A4671 120.540
 AH FL100
 AL FL60
 DP 53:15:20 N 009:35:52 E 
@@ -6920,7 +7000,7 @@ DB 53:11:25 N 009:54:58 E, 53:15:20 N 009:35:52 E
 DP 53:15:20 N 009:35:52 E
 
 AC TMZ
-AN TMZ-EDDH-B A4671 119.510
+AN TMZ-EDDH-B A4671 120.540
 AH FL100
 AL FL75 
 DP 53:14:18 N 009:26:49 E 
@@ -8740,13 +8820,6 @@ V X=48:41:31 N 011:02:01 E
 DC 2.00
 
 AC Q
-AN PARA Calw 126.730
-AH FL150
-AL GND
-V X=48:42:35 N 008:47:06 E
-DC 2.00
-
-AC Q
 AN PARA Dahlemer Binz EDKV 130.085
 AH FL100
 AL GND
@@ -8807,13 +8880,6 @@ AN PARA Fehrbellin EDBF 133.940
 AH FL100
 AL GND
 V X=52:47:25 N 012:45:54 E
-DC 2.00
-
-AC Q
-AN PARA Finsterwalde EDUS 134.540
-AH FL100
-AL GND
-V X=51:36:27 N 013:44:17 E
 DC 2.00
 
 AC Q
@@ -9006,13 +9072,6 @@ AN PARA Magdeburg EDBM 119.305
 AH FL100
 AL GND
 V X=52:04:37 N 011:37:25 E
-DC 2.00
-
-AC Q
-AN PARA Mainbullau EDFU 121.035
-AH FL100
-AL GND
-V X=49:41:42 N 009:10:55 E
 DC 2.00
 
 AC Q
@@ -9308,6 +9367,22 @@ DP 47:29:46 N 008:44:57 E
 DP 47:30:35 N 008:44:15 E 
 DP 47:36:34 N 008:32:27 E  
 DP 47:41:11 N 008:28:26 E
+
+AC C
+AN TMA ZUERICH 2B 127.755
+AH FL100
+AL 3500ft MSL
+DP 47:38:14 N 008:13:20 E  
+DP 47:32:10 N 008:21:38 E 
+DP 47:30:44 N 008:20:38 E  
+DP 47:29:06 N 008:19:59 E 
+DP 47:23:20 N 008:20:36 E  
+DP 47:24:35 N 008:18:13 E 
+DP 47:26:05 N 008:17:25 E  
+DP 47:26:49 N 008:17:51 E 
+DP 47:37:22 N 008:11:04 E  
+DP 47:38:14 N 008:13:20 E
+
 
 AC C
 AN TMA ZUERICH 3A 127.755
