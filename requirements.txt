@@ -1,4 +1,7 @@
 # Install aerofiles package and testing packages
-aerofiles==1.2.1
+aerofiles==1.5.5
 icecream
 shapely
+matplotlib
+autopep8==2.3.2
+
