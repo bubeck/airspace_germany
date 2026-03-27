@@ -15,8 +15,10 @@ import sys
 from enum import Enum
 import re
 from icecream import ic
+import numpy as np
 
 args = None
+
 
 def LINE():
     return sys._getframe(1).f_lineno
@@ -27,39 +29,45 @@ def LINE():
 #
 # @param globalArgs the result from argparse
 #
+
+
 def setArgs(globalArgs):
     global args
 
     args = globalArgs
+
 
 class Prio(Enum):
     OK = 0
     ERR = 1
     WARN = 2
 
+
 problem_count = [0, 0, 0]
 
-def problem(prio, message, lineno = None):
+
+def problem(prio, message, lineno=None):
     global problem_count, prio_name, args
-    
+
     if lineno != None:
         in_line = f', line {lineno}'
     else:
         in_line = ""
 
     message = f'{prio.name}{in_line}: {message}'
-    
+
     if "ignore_errors" in args and args.ignore_errors != None and message in args.ignore_errors:
         return
-    
+
     print_out = True
     if "errors_only" in args and args.errors_only:
         if prio.value >= Prio.WARN.value:
-            print_out = False    
+            print_out = False
     if print_out:
         print(message)
-        
+
     problem_count[prio.value] = problem_count[prio.value] + 1
+
 
 def printProblemCounts():
     global problem_count, prio_name
@@ -68,6 +76,7 @@ def printProblemCounts():
         print(f'{problem_count[prio.value]} {prio.name}')
 
     return problem_count[prio.ERR.value] > 0
+
 
 def iH(record1, record2):
     if record1["ceiling_ft"] > record2["floor_ft"] and record1["ceiling_ft"] < record2["ceiling_ft"]:
@@ -78,8 +87,10 @@ def iH(record1, record2):
         return True
     return False
 
+
 def intersectsInHeight(record1, record2):
     return iH(record1, record2) or iH(record2, record1)
+
 
 def getOverlappingAirspaces(records):
     overlap = []
@@ -91,19 +102,21 @@ def getOverlappingAirspaces(records):
             if intersectsInHeight(record1, record2):
                 if record1["polygon"].intersects(record2["polygon"]):
                     try:
-                        intersection = shapely.intersection(record1["polygon"], record2["polygon"])
+                        intersection = shapely.intersection(
+                            record1["polygon"], record2["polygon"])
                         area = intersection.area
                         if area > 0:
                             overlap.append([record1, record2])
                     except shapely.errors.GEOSException as e:
-                        problem(Prio.ERR, "Invalid Overlapping Airspaces " + getAirspaceName2(record1) + ", " + getAirspaceName2(record2), e)
-
+                        problem(Prio.ERR, "Invalid Overlapping Airspaces " +
+                                getAirspaceName2(record1) + ", " + getAirspaceName2(record2), e)
 
     return overlap
 
+
 def checkHeightFL(record, h):
     prio = Prio.OK
-    
+
     height = record[h]
     unit = height[:2]
     if unit.upper() == "FL" and unit != "FL":   # FL is not spelled as FL
@@ -121,6 +134,7 @@ def checkHeightFL(record, h):
                     prio = Prio.WARN
             record[h + "_ft"] = fl * 100
     return prio
+
 
 def checkHeightFT(record, h):
     prio = Prio.OK
@@ -142,17 +156,18 @@ def checkHeightFT(record, h):
         else:
             record[h + "_ft"] = height
         ref = m.group(3).upper()
-        if ref in ["MSL", "GND", "SFC"]:
+        if ref in ["GND", "SFC"]:
             if prio.value < Prio.WARN.value:
                 prio = Prio.WARN
-        elif not ref in ["AGL", "AMSL"]:
+        elif not ref in ["MSL", "AGL", "AMSL"]:
             return Prio.ERR
         return prio
 
     return Prio.ERR
-    
+
+
 def checkHeight(record, h):
-    #ic(record["name"], h)
+    # ic(record["name"], h)
     height = record[h].strip()
     if height.upper() in ["GND", "SFC"]:
         record[h + "_ft"] = 0
@@ -161,24 +176,27 @@ def checkHeight(record, h):
         return checkHeightFL(record, h)
     if height[0].isdecimal():
         return checkHeightFT(record, h)
-    
+
     return Prio.ERR
 
-def checkHeights(records):
 
+def checkHeights(records):
     """
     Walk through all records and check all heights given for each airspace.
     A height must follow a convention to be valid.
     """
-    
+
     for record in records:
         for h in ["floor", "ceiling"]:
             if h in record:
                 prio = checkHeight(record, h)
                 if prio.value > Prio.OK.value:
-                    problem(prio, f'Height "{record[h]}" in {getAirspaceName2(record)}')
+                    problem(
+                        prio, f'Height "{record[h]}" in {getAirspaceName2(record)}')
             else:
-                problem(Prio.ERR, f'Missing height "{h}" in {getAirspaceName2(record)}')
+                problem(
+                    Prio.ERR, f'Missing height "{h}" in {getAirspaceName2(record)}')
+
 
 def getAirspaceName(record):
     n1 = f'{record["name"]}:{record["class"]}'
@@ -188,8 +206,9 @@ def getAirspaceName(record):
         h1 = ""
     return (n1, h1)
 
+
 def getAirspaceName2(record):
-    (n,h) = getAirspaceName(record)
+    (n, h) = getAirspaceName(record)
     return f'{n} {h}'
 
 # Converter function to convert nautical miles to km
@@ -197,19 +216,22 @@ def getAirspaceName2(record):
 # @param nm nautical miles
 #
 # @return corresponding value in km
+
+
 def nautical_miles_to_km(nm):
     return nm * 1.852
 
+
 def geo_destination(lat1, lon1, angle, distance_km):
-    angle = math.radians(angle);
-    dx = math.sin(angle) * distance_km;
-    dy = math.cos(angle) * distance_km;
-    
+    angle = math.radians(angle)
+    dx = math.sin(angle) * distance_km
+    dy = math.cos(angle) * distance_km
+
     (kx, ky) = get_kx_ky(lat1)
-    
-    lon2 = lon1 + dx / kx;
-    lat2 = lat1 + dy / ky;
-    
+
+    lon2 = lon1 + dx / kx
+    lat2 = lat1 + dy / ky
+
     return (lat2, lon2)
 
  # Compute the distance between two GPS points in 2 dimensions
@@ -224,25 +246,27 @@ def geo_destination(lat1, lon1, angle, distance_km):
  # \param bearing pointer to bearing (NULL if not used)
  #
  # \return the distance in cm.
- #/
+ # /
+
+
 def geo_distance(lat1, lon1, lat2, lon2):
     d_lon = (lon2 - lon1)
     d_lat = (lat2 - lat1)
 
-    #	DEBUG("#d_lon=%0.10f\n", d_lon);
-    #	DEBUG("#d_lat=%0.10f\n", d_lat);
-    
-    #	DEBUG("lat1=%li\n", lat1);
-    #	DEBUG("lon1=%li\n", lon1);
-    #	DEBUG("lat2=%li\n", lat2);
-    #	DEBUG("lon2=%li\n", lon2);
+    # DEBUG("#d_lon=%0.10f\n", d_lon);
+    # DEBUG("#d_lat=%0.10f\n", d_lat);
+
+    # DEBUG("lat1=%li\n", lat1);
+    # DEBUG("lon1=%li\n", lon1);
+    # DEBUG("lat2=%li\n", lat2);
+    # DEBUG("lon2=%li\n", lon2);
 
     # WGS
     # DEBUG("f=0\n");
     # DEBUG("#lat=%0.10f\n", (lat1 + lat2) / ((float)GPS_COORD_MUL * 2));
-    
+
     (kx, ky) = get_kx_ky((lat1 + lat2) / 2)
-    
+
     # DEBUG("#kx=%0.10f\n", kx);
     # DEBUG("#ky=%0.10f\n", ky);
 
@@ -264,6 +288,7 @@ def geo_distance(lat1, lon1, lat2, lon2):
 
     return (dist, bearing)
 
+
 def get_kx_ky(lat):
     fcos = math.cos(math.radians(lat))
     cos2 = 2. * fcos * fcos - 1.
@@ -276,15 +301,16 @@ def get_kx_ky(lat):
     ky = (111.13209 - 0.56605 * cos2 + 0.0012 * cos4)
     return (kx, ky)
 
+
 def decimal_degrees_to_dms(decimal_degrees):
-    #mnt,sec = divmod(decimal_degrees*3600,60)
-    #deg,mnt = divmod(mnt, 60)
-    #return (round(deg),round(mnt),round(sec))
-    
-    #decimals, number = math.modf(decimal_degrees)
-    #deg = int(number)
-    #mnt = round(decimals * 60)
-    #sec = (decimal_degrees - deg - mnt / 60) * 3600.00
+    # mnt,sec = divmod(decimal_degrees*3600,60)
+    # deg,mnt = divmod(mnt, 60)
+    # return (round(deg),round(mnt),round(sec))
+
+    # decimals, number = math.modf(decimal_degrees)
+    # deg = int(number)
+    # mnt = round(decimals * 60)
+    # sec = (decimal_degrees - deg - mnt / 60) * 3600.00
     # return deg,mnt,round(sec)
 
     decimals, number = math.modf(decimal_degrees)
@@ -299,10 +325,12 @@ def decimal_degrees_to_dms(decimal_degrees):
             deg += 1
     return deg, mnt, sec
 
+
 def strDegree(v, width):
-    (degrees,minutes,seconds) = decimal_degrees_to_dms(abs(v))
+    (degrees, minutes, seconds) = decimal_degrees_to_dms(abs(v))
     return f'{degrees:0{width}d}:{minutes:02d}:{seconds:02d}'
-    
+
+
 def strLatLon(P):
     result = strDegree(abs(P[0]), 2) + " "
     if P[0] >= 0:
@@ -317,10 +345,53 @@ def strLatLon(P):
         result = result + "W "
     return result
 
+
+def improve_DB(element):
+    A = element["start"]
+    B = element["end"]
+    C = element["center"]
+
+    A = np.array(A, dtype=float)
+    B = np.array(B, dtype=float)
+    C = np.array(C, dtype=float)
+
+    # Mittelpunkt zwischen A und B
+    M = (A + B) / 2
+
+    # Richtungsvektor von A nach B
+    AB = B - A
+
+    # Projiziere C_initial auf die Mittelsenkrechte durch M
+    # Die Mittelsenkrechte ist senkrecht zu AB und geht durch M
+    MC = C - M
+
+    # Projektion von MC auf die Richtung senkrecht zu AB
+    # C_optimized = M + Komponente von MC senkrecht zu AB
+    AB_norm_sq = np.dot(AB, AB)
+
+    if AB_norm_sq > 1e-10:  # Vermeide Division durch 0
+        # Entferne die Komponente parallel zu AB
+        parallel_component = (np.dot(MC, AB) / AB_norm_sq) * AB
+        perpendicular_component = MC - parallel_component
+        C_optimized = M + perpendicular_component
+    else:
+        # A und B sind identisch
+        C_optimized = C
+
+    # Berechne optimalen Radius und Fehler
+    dist_A = np.linalg.norm(A - C_optimized)
+    dist_B = np.linalg.norm(B - C_optimized)
+    radius = (dist_A + dist_B) / 2
+    error = abs(dist_A - dist_B)
+
+    print(f'improved center from {strLatLon(C)} to {strLatLon(C_optimized)}')
+
+
 def resolveRecordArcs(records):
     for record in records:
         resolveArcs(record)
-        
+
+
 def resolveArcs(record):
     global args
 
@@ -329,17 +400,21 @@ def resolveArcs(record):
         if element["type"] == "point":
             element["computed"] = False
             elements_resolved.append(element)
-            #print(f'resolve(point, {strLatLon(element["location"])}')
+            # print(f'resolve(point, {strLatLon(element["location"])}')
         elif element["type"] == "arc":
             if not args.no_arc:
                 if "radius" in element:
-                    elements_resolved.extend(resolve_DA(element["center"], nautical_miles_to_km(element["radius"]), element["start"], element["end"], element["clockwise"], True))
+                    elements_resolved.extend(resolve_DA(element["center"], nautical_miles_to_km(
+                        element["radius"]), element["start"], element["end"], element["clockwise"], True))
                 else:
-                    elements_resolved.extend(resolve_DB(element["center"], element["start"], element["end"], element["clockwise"]))
+                    elements_resolved.extend(resolve_DB(
+                        element["center"], element["start"], element["end"], element["clockwise"]))
             else:
-                #ic(element)
-                elements_resolved.append(createElementPoint(element["start"][0], element["start"][1]))
-                elements_resolved.append(createElementPoint(element["end"][0], element["end"][1]))
+                # ic(element)
+                elements_resolved.append(createElementPoint(
+                    element["start"][0], element["start"][1]))
+                elements_resolved.append(createElementPoint(
+                    element["end"][0], element["end"][1]))
         elif element["type"] == "circle":
             elements_resolved.extend(resolve_circle(element))
         else:
@@ -348,16 +423,21 @@ def resolveArcs(record):
 
     record["elements_resolved"] = elements_resolved
     return elements_resolved
-                                         
+
+
 def createElementPoint(lat, lon):
     element = {}
     element["type"] = "point"
-    element["location"] = [ lat, lon ]
+    element["location"] = [lat, lon]
     return element
 
-def resolve_DA(center, radius_km, start_angle, end_angle, clockwise, use_edge):
+
+def resolve_DA(center, radius_km, start_angle, end_angle, clockwise, use_edge, radius_km_end=None):
     global args
     elements = []
+
+    if radius_km_end == None:
+        radius_km_end = radius_km
 
     if clockwise:
         reverse = False
@@ -367,12 +447,12 @@ def resolve_DA(center, radius_km, start_angle, end_angle, clockwise, use_edge):
         tmp = start_angle
         start_angle = end_angle
         end_angle = tmp
-        
+
     if args.fast_arc:
         dir = 10
     else:
         dir = 1
-        
+
     if clockwise:
         while start_angle > end_angle:
             end_angle = end_angle + 360
@@ -380,17 +460,19 @@ def resolve_DA(center, radius_km, start_angle, end_angle, clockwise, use_edge):
         dir = -dir
         while start_angle < end_angle:
             start_angle = start_angle + 360
-        
-    #print("start_angle:", start_angle)
-    #print("end_angle:", end_angle)
-    #print("clockwise:", clockwise)
+
+    # print("start_angle:", start_angle)
+    # print("end_angle:", end_angle)
+    # print("clockwise:", clockwise)
+    # print("radius_km:", radius_km)
+    # print("radius_km_e:", radius_km_end)
 
     if not use_edge:
         start_angle = start_angle + dir
         end_angle = end_angle - dir
-        
+
     angle = start_angle
-    
+
     while True:
         # print("loop angle:", angle)
         if clockwise:
@@ -401,17 +483,27 @@ def resolve_DA(center, radius_km, start_angle, end_angle, clockwise, use_edge):
             if angle <= end_angle:
                 angle = end_angle
                 break
-        (lat, lon) = geo_destination(center[0], center[1], angle, radius_km)
+
+        # distance = radius_km
+        t = (angle - start_angle) / (end_angle - start_angle)
+        if reverse:
+            t = 1 - t
+        # ic(t)
+        distance = radius_km + t * (radius_km_end - radius_km)
+        # ic(distance)
+
+        (lat, lon) = geo_destination(center[0], center[1], angle, distance)
         # print(f'lat={lat} lon={lon}')
-        element = createElementPoint(lat,lon)
+        element = createElementPoint(lat, lon)
         element["computed"] = True
         elements.append(element)
         angle = angle + dir
 
     if reverse:
         elements.reverse()
-        
+
     return elements
+
 
 def resolve_circle(element):
     center = element["center"]
@@ -420,14 +512,18 @@ def resolve_circle(element):
     elements.extend(resolve_DA(center, radius_km, 180, 0, True, True))
     return elements
 
+
 def resolve_DB(center, start, end, clockwise):
 
-    (dist_s, bearing_s) = geo_distance(center[0], center[1], start[0], start[1])
+    (dist_s, bearing_s) = geo_distance(
+        center[0], center[1], start[0], start[1])
     (dist_e, bearing_e) = geo_distance(center[0], center[1], end[0], end[1])
 
     dist_s_km = (dist_s / 100) / 1000
-    
-    elements = resolve_DA(center, dist_s_km, bearing_s, bearing_e, clockwise, False)
+    dist_e_km = (dist_e / 100) / 1000
+
+    elements = resolve_DA(center, dist_s_km, bearing_s,
+                          bearing_e, clockwise, False, dist_e_km)
     element = createElementPoint(start[0], start[1])
     element["computed"] = False
     elements.insert(0, element)
@@ -441,19 +537,33 @@ def resolve_DB(center, start, end, clockwise):
 def createPolygons(records):
     for record in records:
         createPolygonOfRecord(record)
-        
+
+
 def createPolygonOfRecord(record):
     points = []
 
     for element in record["elements_resolved"]:
         points.append(element["location"])
-    #ic(record)
+        # print(element["location"])
+    # ic(record)
     if len(points) < 3:
+        problem(Prio.ERR, getAirspaceName2(record), "has too less points.")
         return
     record["polygon"] = Polygon(points)
-    if not record["polygon"].is_valid:
-        print("WARN", getAirspaceName2(record), "is (probably) not valid. If no error occurs, ignore this warning.")
-        #sys.exit(1)
+
+
+def findLowestXY(record):
+    if not "polygon" in record:
+        print(record, "has no polygon")
+        record["min_x"] = 0
+        record["min_y"] = 0
+        return
+
+    coords = list(record["polygon"].exterior.coords)
+
+    record["min_x"] = min(x for x, y in coords)
+    record["min_y"] = min(y for x, y in coords)
+
 
 def find_airspace(records, name):
     for record in records:
