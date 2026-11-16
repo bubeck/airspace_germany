@@ -95,7 +95,8 @@ def plot(records, overlap):
     a, = plt.plot([], [])
 
     color_num = 30
-    cmap = plt.cm.get_cmap('hsv', color_num)
+    # cmap = plt.cm.get_cmap('hsv', color_num)
+    cmap = plt.get_cmap('hsv', color_num)
     color_pos = 25
 
     plot_reset()
