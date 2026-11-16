@@ -346,6 +346,11 @@ def strLatLon(P):
     return result
 
 
+def strLonLat(P):
+    """Like strLatLon(), but for shapely coordinates, which are (x, y) = (lon, lat)."""
+    return strLatLon([P[1], P[0]])
+
+
 def improve_DB(element):
     A = element["start"]
     B = element["end"]
@@ -543,7 +548,8 @@ def createPolygonOfRecord(record):
     points = []
 
     for element in record["elements_resolved"]:
-        points.append(element["location"])
+        # element["location"] is [lat, lon]; shapely expects (x, y) = (lon, lat)
+        points.append((element["location"][1], element["location"][0]))
         # print(element["location"])
     # ic(record)
     if len(points) < 3:
@@ -559,6 +565,7 @@ def findLowestXY(record):
         record["min_y"] = 0
         return
 
+    # shapely coordinates are (x, y) = (lon, lat)
     coords = list(record["polygon"].exterior.coords)
 
     record["min_x"] = min(x for x, y in coords)
