@@ -336,9 +336,9 @@ def isSelfIntersecting(polygon):
                                polygon.exterior.coords[j+1]])
             if line1.crosses(line2):
                 message = f'Illegal line crossing:\n'
-                message += common.strLatLon(polygon.exterior.coords[i]) + " " + common.strLatLon(
+                message += common.strLonLat(polygon.exterior.coords[i]) + " " + common.strLonLat(
                     polygon.exterior.coords[i+1]) + "\n"
-                message += common.strLatLon(polygon.exterior.coords[j]) + " " + common.strLatLon(
+                message += common.strLonLat(polygon.exterior.coords[j]) + " " + common.strLonLat(
                     polygon.exterior.coords[j+1])
                 common.problem(common.Prio.WARN, message)
                 return True

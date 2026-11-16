@@ -68,11 +68,11 @@ zoom = 1
 
 def plot_shapely(plt, shape):
     if isinstance(shape, shapely.Polygon):
-        y, x = shape.exterior.xy
+        x, y = shape.exterior.xy
         plt.plot(x, y, color="red")
         plt.fill(x, y, alpha=0.5, color="red")
     elif isinstance(shape, shapely.LineString) or isinstance(shape, shapely.Point):
-        y, x = shape.xy
+        x, y = shape.xy
         plt.plot(x, y, color="red")
     elif isinstance(shape, shapely.MultiPolygon) or isinstance(shape, shapely.GeometryCollection):
         for polygon in shape.geoms:
@@ -206,7 +206,7 @@ def find_under(latLon):
 
     r = []
     has_ft = True
-    point = Point(latLon[0], latLon[1])
+    point = Point(latLon[1], latLon[0])  # shapely: (x, y) = (lon, lat)
     for record in plot_records:
         if "polygon" in record:
             if record["polygon"].contains(point):
