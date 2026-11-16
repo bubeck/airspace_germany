@@ -2,6 +2,7 @@
 
 import aerofiles.openair
 from pprint import pprint
+from pathlib import Path
 import math
 import io
 import argparse
@@ -98,8 +99,8 @@ def findingForTwoPoints(message, record1, record2, p1, p2):
 
     n1 = common.getAirspaceName2(record1)
     n2 = common.getAirspaceName2(record2)
-    h1 = ""
-    h2 = ""
+    #h1 = ""
+    #h2 = ""
 
     l1 = max(len(n1), len(n2))
     l2 = max(len(h1), len(h2))
@@ -119,6 +120,9 @@ def findingForTwoPoints(message, record1, record2, p1, p2):
         if "lineno" in element:
             p2ss.append(element["lineno"])
 
+    #ic(l1,l2)
+    #ic(n1,h1)
+    #ic(ll2,c2)
     message = message + \
         f'  {n1:{l1}} {h1:{l2}}: {ll1} ({c1}x: lineno {p1ss})' + "\n"
     message = message + \
@@ -241,22 +245,15 @@ def checkOpenAirspaces(records):
 
     records = findOpenAirspaces(records)
     for record in records:
-        # pprint(record)
-        # print("Checking", record["name"])
-        firstElement = record["elements"][0]
-        lastElement = record["elements"][-1]
-        firstPoint = getFirstPoint(firstElement)
-        lastPoint = getLastPoint(lastElement)
-        if firstPoint != lastPoint:
-            (gap_cm, bearing) = common.geo_distance(
-                firstPoint[0], firstPoint[1], lastPoint[0], lastPoint[1])
-            gap_km = gap_cm / 100000
-            (name, dimension) = common.getAirspaceName(record)
-            line_start = None
-            if "lineno" in firstElement:
-                line_start = firstElement["lineno"]
-            common.problem(
-                common.Prio.WARN, f'airspace "{name},{dimension}" is not closed with a gap of {gap_km:.1f}km.', line_start)
+        (gap_cm, bearing) = common.geo_distance(
+            firstPoint[0], firstPoint[1], lastPoint[0], lastPoint[1])
+        gap_km = gap_cm / 100000
+        (name, dimension) = common.getAirspaceName(record)
+        line_start = None
+        if "lineno" in firstElement:
+            line_start = firstElement["lineno"]
+        common.problem(
+            common.Prio.WARN, f'airspace "{name},{dimension}" is not closed with a gap of {gap_km:.1f}km.', line_start)
 
 
 def checkNameEncoding(records):
@@ -308,6 +305,25 @@ def checkEncoding(fp):
             message = message + "\n"
             common.problem(common.Prio.WARN, message, lineno)
 
+def checkLineEndings(filename):
+    data = Path(filename).read_bytes()
+
+    crlf = data.count(b"\r\n")
+    lf = data.count(b"\n") - crlf
+    cr = data.count(b"\r") - crlf
+
+    #print(f"CRLF: {crlf}")
+    #print(f"LF:   {lf}")
+    #print(f"CR:   {cr}")
+
+    if crlf and lf:
+        common.problem(common.Prio.ERR, "(!) GEMISCHTE Zeilenenden: CRLF und LF")
+    #elif crlf:
+    #    print("Einheitlich CRLF")
+    #elif lf:
+    #    print("Einheitlich LF")
+    #elif cr:
+    #    print("Einheitlich CR")
 
 def isSelfIntersecting(polygon):
 
@@ -387,6 +403,12 @@ def checkOverlappingAirspaces(records):
         common.problem(common.Prio.ERR, "Overlapping Airspaces " +
                        common.getAirspaceName2(record1) + ", " + common.getAirspaceName2(record2))
 
+def checkCW(records):
+    for record in records:
+        if record["polygon"].exterior.is_ccw:
+            common.problem(common.Prio.ERR, "Airspace " +
+                           common.getAirspaceName2(record) + " is not defined clockwise (CW)")
+
 
 def fixOpenAirspaces(fp, records):
     """
@@ -445,6 +467,10 @@ parser.add_argument("-f", "--fast-arc", action="store_true",
                     help="Resolve arcs with less quality (10 degree steps)")
 parser.add_argument("-c", "--complete-check", action="store_true",
                     help="Check all airspaces EXACTLY for geometry errors")
+parser.add_argument("-C", "--check-points", action="store_true",
+                    help="Check all points if they are close but not identical")
+parser.add_argument("--check-direction", action="store_true",
+                    help="Check all airspaces are defined in clockwise order")
 parser.add_argument("filename")
 args = parser.parse_args()
 common.setArgs(args)
@@ -488,10 +514,15 @@ if args.check_overlap:
     checkOverlappingAirspaces(records)
 checkDB(records)
 checkEncoding(content)
+content.seek(0, io.SEEK_SET)
+checkLineEndings(args.filename)
 checkOpenAirspaces(records)
 checkNameEncoding(records)
+if args.check_direction:
+    checkCW(records)
 checkCircles(records)
-checkPoints(records)
+if args.check_points:
+    checkPoints(records)
 
 ret = common.printProblemCounts()
 
